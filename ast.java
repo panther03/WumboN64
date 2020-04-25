@@ -171,12 +171,21 @@ class DeclListNode extends ASTnode {
      * decls in the list.
      */
     public void nameAnalysis(SymTable symTab, SymTable globalTab) {
+        boolean mainFunctionExists = false;
         for (DeclNode node : myDecls) {
             if (node instanceof VarDeclNode) {
                 ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
+            } else if (node instanceof FnDeclNode) {
+                if (((FnDeclNode)node).myName().name() == "main") {
+                    mainFunctionExists = true;
+                } 
+                node.nameAnalysis(symTab);
             } else {
                 node.nameAnalysis(symTab);
             }
+        }
+        if (!mainFunctionExists) {
+            ErrMsg.fatal(0, 0,  "No main function");
         }
     }
 
@@ -609,6 +618,10 @@ class FnDeclNode extends DeclNode {
         p.println(") {");
         myBody.unparse(p, indent+4);
         p.println("}\n");
+    }
+
+    public IdNode myName() {
+        return myId;
     }
 
     // 4 kids
