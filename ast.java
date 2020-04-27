@@ -102,6 +102,12 @@ import java.util.*;
 //
 // **********************************************************************
 
+// Holds the offset through the NameAnalysis phase as the AST is traversed.
+class OffsetHolder {
+    public static int localsOffset = 0;
+    public static int paramsOffset = 0;
+}
+
 // **********************************************************************
 // %%%ASTnode class (base class for all other kinds of nodes)
 // **********************************************************************
@@ -186,7 +192,7 @@ class DeclListNode extends ASTnode {
         boolean mainFunctionExists = false;
         for (DeclNode node : myDecls) {
             if (node instanceof VarDeclNode) {
-                ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
+                ((VarDeclNode)node).nameAnalysis(symTab, globalTab, isGlobal);
             } else if (node instanceof FnDeclNode) {
                 if (((FnDeclNode)node).myName().name().equals("main")) {
                     mainFunctionExists = true;
@@ -196,7 +202,7 @@ class DeclListNode extends ASTnode {
                 node.nameAnalysis(symTab);
             }
         }
-        
+
         if (!mainFunctionExists && isGlobal) {
             ErrMsg.fatal(0, 0,  "No main function");
         }
@@ -458,10 +464,10 @@ class VarDeclNode extends DeclNode {
      * symTab and globalTab can be the same
      */
     public Sym nameAnalysis(SymTable symTab) {
-        return nameAnalysis(symTab, symTab);
+        return nameAnalysis(symTab, symTab, false);
     }
 
-    public Sym nameAnalysis(SymTable symTab, SymTable globalTab) {
+    public Sym nameAnalysis(SymTable symTab, SymTable globalTab, boolean isGlobal) {
         boolean badDecl = false;
         String name = myId.name();
         Sym sym = null;
@@ -516,7 +522,20 @@ class VarDeclNode extends DeclNode {
                     sym = new StructSym(structId);
                 }
                 else {
+
+                    VarLocation varlocation;
+
+                    if (isGlobal) {
+                        varlocation = VarLocation.GLOBAL;
+                    } else {
+                        varlocation = VarLocation.LOCAL;
+                    }
+
                     sym = new Sym(myType.type());
+                    sym.offset = OffsetHolder.localsOffset;
+                    sym.varLocation = varlocation; 
+
+                    OffsetHolder.localsOffset -= 4;
                 }
                 symTab.addDecl(name, sym);
                 myId.link(sym);
@@ -544,6 +563,8 @@ class VarDeclNode extends DeclNode {
         p.print(" ");
         p.print(myId.name());
         p.println(";");
+
+        p.print(myId.sym().offset);
     }
 
     // 3 kids
@@ -604,6 +625,9 @@ class FnDeclNode extends DeclNode {
                 sym = new FnSym(myType.type(), myFormalsList.length(), myLocalsSize);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
+                
+                System.out.println(sym.localsSizeBytes());
+                System.out.println(sym.paramsSizeBytes());
             } catch (DuplicateSymException ex) {
                 System.err.println("Unexpected DuplicateSymException " +
                                    " in FnDeclNode.nameAnalysis");
@@ -622,11 +646,13 @@ class FnDeclNode extends DeclNode {
         symTab.addScope();  // add a new scope for locals and params
 
         // process the formals
+        OffsetHolder.paramsOffset = 4;
         List<Type> typeList = myFormalsList.nameAnalysis(symTab);
         if (sym != null) {
             sym.addFormals(typeList);
         }
 
+        OffsetHolder.localsOffset = -8;
         myBody.nameAnalysis(symTab); // process the function body
 
         try {
@@ -656,16 +682,7 @@ class FnDeclNode extends DeclNode {
         myFormalsList.unparse(p, 0);
         p.println(") {");
         myBody.unparse(p, indent+4);
-        p.print("} [ ");
-        try {
-            p.print(((FnSym)myId.sym()).localSizesBytes());
-            p.print(",");
-            p.print(((FnSym)myId.sym()).paramSizesBytes());
-        } catch (ClassCastException c) {
-            System.err.println("Symbol is not of function type");
-        }
-
-        p.println(" ] \n");
+        p.println("}\n");
     }
 
     public IdNode myName() {
@@ -732,6 +749,11 @@ class FormalDeclNode extends DeclNode {
                 sym = new Sym(myType.type());
                 symTab.addDecl(name, sym);
                 myId.link(sym);
+
+                sym.varLocation = VarLocation.PARAM;
+                sym.offset = OffsetHolder.paramsOffset;
+
+                OffsetHolder.paramsOffset += 4;
             } catch (DuplicateSymException ex) {
                 System.err.println("Unexpected DuplicateSymException " +
                                    " in FormalDeclNode.nameAnalysis");
@@ -754,6 +776,7 @@ class FormalDeclNode extends DeclNode {
         myType.unparse(p, 0);
         p.print(" ");
         p.print(myId.name());
+        p.print(myId.sym().offset);
     }
 
     // 2 kids

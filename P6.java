@@ -155,6 +155,17 @@ public class P6 {
 			return P6.RESULT_TYPE_ERROR;
 		}
 
+		// REMOVE THIS
+
+		try {
+            outFile = new PrintWriter("test.out");
+        } catch (FileNotFoundException ex) {
+        	// bad
+        }
+
+
+		astRoot.unparse(outFile, 0);
+
 		//////////////////////////
 		// TODO: Calling codeGen   //
 		//////////////////////////
