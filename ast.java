@@ -133,7 +133,7 @@ class ProgramNode extends ASTnode {
      */
     public void nameAnalysis() {
         SymTable symTab = new SymTable();
-        myDeclList.nameAnalysis(symTab);
+        myDeclList.nameAnalysis(symTab, symTab, true);
     }
 
     /**
@@ -156,12 +156,24 @@ class DeclListNode extends ASTnode {
         myDecls = S;
     }
 
+    public int getSize() {
+        int total = 0;
+        for (DeclNode node : myDecls) {
+            total += node.getSize();
+        }
+        return total;
+    }
+
     /**
      * nameAnalysis
      * Given a symbol table symTab, process all of the decls in the list.
      */
     public void nameAnalysis(SymTable symTab) {
-        nameAnalysis(symTab, symTab);
+        nameAnalysis(symTab, symTab, false);
+    }
+
+    public void nameAnalysis(SymTable symTab, SymTable globalTab) {
+        nameAnalysis(symTab, globalTab, false);
     }
 
     /**
@@ -170,13 +182,13 @@ class DeclListNode extends ASTnode {
      * (for processing struct names in variable decls), process all of the
      * decls in the list.
      */
-    public void nameAnalysis(SymTable symTab, SymTable globalTab) {
+    public void nameAnalysis(SymTable symTab, SymTable globalTab, boolean isGlobal) {
         boolean mainFunctionExists = false;
         for (DeclNode node : myDecls) {
             if (node instanceof VarDeclNode) {
                 ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
             } else if (node instanceof FnDeclNode) {
-                if (((FnDeclNode)node).myName().name() == "main") {
+                if (((FnDeclNode)node).myName().name().equals("main")) {
                     mainFunctionExists = true;
                 } 
                 node.nameAnalysis(symTab);
@@ -184,7 +196,8 @@ class DeclListNode extends ASTnode {
                 node.nameAnalysis(symTab);
             }
         }
-        if (!mainFunctionExists) {
+        
+        if (!mainFunctionExists && isGlobal) {
             ErrMsg.fatal(0, 0,  "No main function");
         }
     }
@@ -265,6 +278,10 @@ class FnBodyNode extends ASTnode {
         myStmtList = stmtList;
     }
 
+    public int getSize() {
+        return myDeclList.getSize() + myStmtList.getSize();
+    }
+
     /**
      * nameAnalysis
      * Given a symbol table symTab, do:
@@ -296,6 +313,14 @@ class FnBodyNode extends ASTnode {
 class StmtListNode extends ASTnode {
     public StmtListNode(List<StmtNode> S) {
         myStmts = S;
+    }
+
+    public int getSize() {
+        int total = 0;
+        for (StmtNode node : myStmts) {
+            total += node.getSize();
+        }
+        return total;
     }
 
     /**
@@ -398,6 +423,8 @@ abstract class DeclNode extends ASTnode {
 
     // default version of typeCheck for non-function decls
     public void typeCheck() { }
+
+    abstract public int getSize();
 }
 
 class VarDeclNode extends DeclNode {
@@ -405,6 +432,14 @@ class VarDeclNode extends DeclNode {
         myType = type;
         myId = id;
         mySize = size;
+    }
+
+    public int getSize() {
+        if (myType instanceof IntNode || myType instanceof BoolNode) {
+            return 4;
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -530,6 +565,8 @@ class FnDeclNode extends DeclNode {
         myBody = body;
     }
 
+    public int getSize() { return 0; }
+
     /**
      * nameAnalysis
      * Given a symbol table symTab, do:
@@ -555,6 +592,8 @@ class FnDeclNode extends DeclNode {
                                    " in FnDeclNode.nameAnalysis");
         }
 
+        int myLocalsSize = myBody.getSize();
+
         if (symCheckMul != null) {
             ErrMsg.fatal(myId.lineNum(), myId.charNum(),
                          "Multiply declared identifier");
@@ -562,7 +601,7 @@ class FnDeclNode extends DeclNode {
 
         else { // add function name to local symbol table
             try {
-                sym = new FnSym(myType.type(), myFormalsList.length());
+                sym = new FnSym(myType.type(), myFormalsList.length(), myLocalsSize);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
             } catch (DuplicateSymException ex) {
@@ -617,7 +656,16 @@ class FnDeclNode extends DeclNode {
         myFormalsList.unparse(p, 0);
         p.println(") {");
         myBody.unparse(p, indent+4);
-        p.println("}\n");
+        p.print("} [ ");
+        try {
+            p.print(((FnSym)myId.sym()).localSizesBytes());
+            p.print(",");
+            p.print(((FnSym)myId.sym()).paramSizesBytes());
+        } catch (ClassCastException c) {
+            System.err.println("Symbol is not of function type");
+        }
+
+        p.println(" ] \n");
     }
 
     public IdNode myName() {
@@ -635,6 +683,14 @@ class FormalDeclNode extends DeclNode {
     public FormalDeclNode(TypeNode type, IdNode id) {
         myType = type;
         myId = id;
+    }
+
+    public int getSize() {
+        if (myType instanceof IntNode || myType instanceof BoolNode) {
+            return 4;
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -709,6 +765,10 @@ class StructDeclNode extends DeclNode {
     public StructDeclNode(IdNode id, DeclListNode declList) {
         myId = id;
         myDeclList = declList;
+    }
+
+    public int getSize() {
+        return 0;
     }
 
     /**
@@ -871,11 +931,16 @@ class StructNode extends TypeNode {
 abstract class StmtNode extends ASTnode {
     abstract public void nameAnalysis(SymTable symTab);
     abstract public void typeCheck(Type retType);
+    abstract public int getSize();
 }
 
 class AssignStmtNode extends StmtNode {
     public AssignStmtNode(AssignNode assign) {
         myAssign = assign;
+    }
+
+    public int getSize() {
+        return 0;
     }
 
     /**
@@ -906,6 +971,10 @@ class AssignStmtNode extends StmtNode {
 class PostIncStmtNode extends StmtNode {
     public PostIncStmtNode(ExpNode exp) {
         myExp = exp;
+    }
+
+    public int getSize() {
+        return 0;
     }
 
     /**
@@ -943,6 +1012,10 @@ class PostDecStmtNode extends StmtNode {
         myExp = exp;
     }
 
+    public int getSize() {
+        return 0;
+    }
+
     /**
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
@@ -976,6 +1049,10 @@ class PostDecStmtNode extends StmtNode {
 class ReadStmtNode extends StmtNode {
     public ReadStmtNode(ExpNode e) {
         myExp = e;
+    }
+
+    public int getSize() {
+        return 0;
     }
 
     /**
@@ -1022,6 +1099,10 @@ class ReadStmtNode extends StmtNode {
 class WriteStmtNode extends StmtNode {
     public WriteStmtNode(ExpNode exp) {
         myExp = exp;
+    }
+
+    public int getSize() {
+        return 0;
     }
 
     /**
@@ -1075,6 +1156,10 @@ class IfStmtNode extends StmtNode {
         myDeclList = dlist;
         myExp = exp;
         myStmtList = slist;
+    }
+
+    public int getSize() {
+        return myDeclList.getSize() + myStmtList.getSize();
     }
 
     /**
@@ -1139,6 +1224,11 @@ class IfElseStmtNode extends StmtNode {
         myThenStmtList = slist1;
         myElseDeclList = dlist2;
         myElseStmtList = slist2;
+    }
+
+    public int getSize() {
+        return myThenDeclList.getSize() + myThenStmtList.getSize() 
+             + myElseDeclList.getSize() + myElseStmtList.getSize();
     }
 
     /**
@@ -1223,6 +1313,10 @@ class WhileStmtNode extends StmtNode {
         myStmtList = slist;
     }
 
+    public int getSize() {
+        return myDeclList.getSize() + myStmtList.getSize();
+    }
+
     /**
      * nameAnalysis
      * Given a symbol table symTab, do:
@@ -1281,6 +1375,10 @@ class RepeatStmtNode extends StmtNode {
         myExp = exp;
         myDeclList = dlist;
         myStmtList = slist;
+    }
+
+    public int getSize() {
+        return myDeclList.getSize() + myStmtList.getSize();
     }
 
     /**
@@ -1342,6 +1440,10 @@ class CallStmtNode extends StmtNode {
         myCall = call;
     }
 
+    public int getSize() {
+        return 0;
+    }
+
     /**
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
@@ -1370,6 +1472,10 @@ class CallStmtNode extends StmtNode {
 class ReturnStmtNode extends StmtNode {
     public ReturnStmtNode(ExpNode exp) {
         myExp = exp;
+    }
+
+    public int getSize() {
+        return 0;
     }
 
     /**

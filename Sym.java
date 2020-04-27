@@ -6,6 +6,8 @@ import java.util.*;
  */
 public class Sym {
     private Type type;
+    private int offset;
+    private VarLocation varLocation;
 
     public Sym(Type type) {
         this.type = type;
@@ -13,6 +15,10 @@ public class Sym {
 
     public Type getType() {
         return type;
+    }
+
+    public int getOffset() {
+        return offset;
     }
 
     public String toString() {
@@ -29,12 +35,14 @@ class FnSym extends Sym {
     // new fields
     private Type returnType;
     private int numParams;
+    private int localsSize;
     private List<Type> paramTypes;
 
-    public FnSym(Type type, int numparams) {
+    public FnSym(Type type, int numparams, int localsSize) {
         super(new FnType());
         returnType = type;
         numParams = numparams;
+        localsSize = localsSize;
     }
 
     public void addFormals(List<Type> L) {
@@ -51,6 +59,14 @@ class FnSym extends Sym {
 
     public List<Type> getParamTypes() {
         return paramTypes;
+    }
+
+    public int localSizesBytes() {
+        return localsSize;
+    }
+
+    public int paramSizesBytes() {
+        return numParams * 4;
     }
 
     public String toString() {
@@ -109,3 +125,5 @@ class StructDefSym extends Sym {
         return symTab;
     }
 }
+
+enum VarLocation { LOCAL, GLOBAL, PARAM }
