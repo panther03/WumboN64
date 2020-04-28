@@ -155,7 +155,7 @@ class ProgramNode extends ASTnode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        myDeclList.codeGen();
     }
 
     // 1 kid
@@ -236,7 +236,9 @@ class DeclListNode extends ASTnode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        for (DeclNode kids : myDecls) {
+            kids.codeGen();
+        }
     }
 
     // list of kids (DeclNodes)
@@ -323,7 +325,9 @@ class FnBodyNode extends ASTnode {
     
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        // call codegen for stmtlist kid, decllist codegen would be called
+        // from that the declListNode class
+        myStmtList.codeGen();
     }
 
     // 2 kids
@@ -372,7 +376,10 @@ class StmtListNode extends ASTnode {
     
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        // loop through kids codeGen
+        for (StmtNode kids : myStmts) {
+            kids.codeGen();
+        }
     }
 
     // list of kids (StmtNodes)
@@ -435,7 +442,10 @@ class ExpListNode extends ASTnode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        // loop thru kids codeGen
+        for (ExpNode kids : myExps) {
+            kids.codeGen();
+        }
     }
 
     // list of kids (ExpNodes)
@@ -2786,5 +2796,5 @@ class GreaterEqNode extends RelationalExpNode {
     public void codeGen() {
         // TODO
     }
-    
+
 }

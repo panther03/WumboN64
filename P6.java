@@ -169,6 +169,7 @@ public class P6 {
 		//////////////////////////
 		// TODO: Calling codeGen   //
 		//////////////////////////
+		astRoot.codeGen();
 
 		return P6.RESULT_CORRECT;
 	}
