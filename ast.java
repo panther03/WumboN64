@@ -153,6 +153,11 @@ class ProgramNode extends ASTnode {
         myDeclList.unparse(p, indent);
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 1 kid
     private DeclListNode myDeclList;
 }
@@ -227,6 +232,11 @@ class DeclListNode extends ASTnode {
             System.err.println("unexpected NoSuchElementException in DeclListNode.print");
             System.exit(-1);
         }
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // list of kids (DeclNodes)
@@ -310,6 +320,11 @@ class FnBodyNode extends ASTnode {
         myDeclList.unparse(p, indent);
         myStmtList.unparse(p, indent);
     }
+    
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
 
     // 2 kids
     private DeclListNode myDeclList;
@@ -353,6 +368,11 @@ class StmtListNode extends ASTnode {
         while (it.hasNext()) {
             it.next().unparse(p, indent);
         }
+    }
+    
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // list of kids (StmtNodes)
@@ -413,6 +433,11 @@ class ExpListNode extends ASTnode {
         }
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // list of kids (ExpNodes)
     private List<ExpNode> myExps;
 }
@@ -431,6 +456,8 @@ abstract class DeclNode extends ASTnode {
     public void typeCheck() { }
 
     abstract public int getSize();
+
+    public void codeGen() { }
 }
 
 class VarDeclNode extends DeclNode {
@@ -567,6 +594,11 @@ class VarDeclNode extends DeclNode {
         p.print(myId.sym().offset);
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 3 kids
     private TypeNode myType;
     private IdNode myId;
@@ -687,6 +719,11 @@ class FnDeclNode extends DeclNode {
 
     public IdNode myName() {
         return myId;
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // 4 kids
@@ -955,6 +992,7 @@ abstract class StmtNode extends ASTnode {
     abstract public void nameAnalysis(SymTable symTab);
     abstract public void typeCheck(Type retType);
     abstract public int getSize();
+    public void codeGen() { }; 
 }
 
 class AssignStmtNode extends StmtNode {
@@ -985,6 +1023,11 @@ class AssignStmtNode extends StmtNode {
         addIndentation(p, indent);
         myAssign.unparse(p, -1); // no parentheses
         p.println(";");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // 1 kid
@@ -1026,6 +1069,11 @@ class PostIncStmtNode extends StmtNode {
         p.println("++;");
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 1 kid
     private ExpNode myExp;
 }
@@ -1063,6 +1111,11 @@ class PostDecStmtNode extends StmtNode {
         addIndentation(p, indent);
         myExp.unparse(p, 0);
         p.println("--;");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // 1 kid
@@ -1113,6 +1166,11 @@ class ReadStmtNode extends StmtNode {
         p.print("cin >> ");
         myExp.unparse(p, 0);
         p.println(";");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // 1 kid (actually can only be an IdNode or an ArrayExpNode)
@@ -1168,6 +1226,11 @@ class WriteStmtNode extends StmtNode {
         p.print("cout << ");
         myExp.unparse(p, 0);
         p.println(";");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // 1 kid
@@ -1230,6 +1293,11 @@ class IfStmtNode extends StmtNode {
         myStmtList.unparse(p, indent+4);
         addIndentation(p, indent);
         p.println("}");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // e kids
@@ -1321,6 +1389,11 @@ class IfElseStmtNode extends StmtNode {
         p.println("}");
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 5 kids
     private ExpNode myExp;
     private DeclListNode myThenDeclList;
@@ -1385,6 +1458,11 @@ class WhileStmtNode extends StmtNode {
         myStmtList.unparse(p, indent+4);
         addIndentation(p, indent);
         p.println("}");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     // 3 kids
@@ -1488,6 +1566,11 @@ class CallStmtNode extends StmtNode {
         p.println(";");
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 1 kid
     private CallExpNode myCall;
 }
@@ -1548,6 +1631,11 @@ class ReturnStmtNode extends StmtNode {
         p.println(";");
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 1 kid
     private ExpNode myExp; // possibly null
 }
@@ -1565,6 +1653,8 @@ abstract class ExpNode extends ASTnode {
     abstract public Type typeCheck();
     abstract public int lineNum();
     abstract public int charNum();
+    public void codeGen() { };
+
 }
 
 class IntLitNode extends ExpNode {
@@ -1597,6 +1687,11 @@ class IntLitNode extends ExpNode {
 
     public void unparse(PrintWriter p, int indent) {
         p.print(myIntVal);
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     private int myLineNum;
@@ -1636,6 +1731,11 @@ class StringLitNode extends ExpNode {
         p.print(myStrVal);
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     private int myLineNum;
     private int myCharNum;
     private String myStrVal;
@@ -1672,6 +1772,11 @@ class TrueNode extends ExpNode {
         p.print("true");
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     private int myLineNum;
     private int myCharNum;
 }
@@ -1705,6 +1810,11 @@ class FalseNode extends ExpNode {
 
     public void unparse(PrintWriter p, int indent) {
         p.print("false");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     private int myLineNum;
@@ -1796,6 +1906,11 @@ class IdNode extends ExpNode {
         if (mySym != null) {
             p.print("(" + mySym + ")");
         }
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
     }
 
     private int myLineNum;
@@ -2030,6 +2145,11 @@ class AssignNode extends ExpNode {
         if (indent != -1)  p.print(")");
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 2 kids
     private ExpNode myLhs;
     private ExpNode myExp;
@@ -2109,6 +2229,11 @@ class CallExpNode extends ExpNode {
         p.print(")");
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // 2 kids
     private IdNode myId;
     private ExpListNode myExpList;  // possibly null
@@ -2179,6 +2304,11 @@ abstract class BinaryExpNode extends ExpNode {
         myExp2.nameAnalysis(symTab);
     }
 
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
     // two kids
     protected ExpNode myExp1;
     protected ExpNode myExp2;
@@ -2218,6 +2348,12 @@ class UnaryMinusNode extends UnaryExpNode {
         myExp.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class NotNode extends UnaryExpNode {
@@ -2250,6 +2386,12 @@ class NotNode extends UnaryExpNode {
         myExp.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 // **********************************************************************
@@ -2418,6 +2560,12 @@ class PlusNode extends ArithmeticExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class MinusNode extends ArithmeticExpNode {
@@ -2432,6 +2580,12 @@ class MinusNode extends ArithmeticExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class TimesNode extends ArithmeticExpNode {
@@ -2447,6 +2601,12 @@ class TimesNode extends ArithmeticExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class DivideNode extends ArithmeticExpNode {
@@ -2461,6 +2621,12 @@ class DivideNode extends ArithmeticExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class AndNode extends LogicalExpNode {
@@ -2475,6 +2641,12 @@ class AndNode extends LogicalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class OrNode extends LogicalExpNode {
@@ -2489,6 +2661,12 @@ class OrNode extends LogicalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class EqualsNode extends EqualityExpNode {
@@ -2503,6 +2681,12 @@ class EqualsNode extends EqualityExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class NotEqualsNode extends EqualityExpNode {
@@ -2517,6 +2701,12 @@ class NotEqualsNode extends EqualityExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class LessNode extends RelationalExpNode {
@@ -2531,6 +2721,12 @@ class LessNode extends RelationalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class GreaterNode extends RelationalExpNode {
@@ -2545,6 +2741,12 @@ class GreaterNode extends RelationalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class LessEqNode extends RelationalExpNode {
@@ -2559,6 +2761,12 @@ class LessEqNode extends RelationalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+
 }
 
 class GreaterEqNode extends RelationalExpNode {
@@ -2573,4 +2781,10 @@ class GreaterEqNode extends RelationalExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    /* CODEGEN */
+    public void codeGen() {
+        // TODO
+    }
+    
 }
