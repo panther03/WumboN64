@@ -157,18 +157,23 @@ public class P6 {
 
 		// REMOVE THIS
 
+		PrintWriter debug_outFile; 
+
 		try {
-            outFile = new PrintWriter("test.out");
+        	debug_outFile = new PrintWriter("test.out");
         } catch (FileNotFoundException ex) {
-        	// bad
+        	debug_outFile = null;
         }
 
 
-		astRoot.unparse(outFile, 0);
+		astRoot.unparse(debug_outFile, 0);
 
-		//////////////////////////
-		// TODO: Calling codeGen   //
-		//////////////////////////
+		//////////////////////////////////////////////////
+		// Setting up the PrintWriter & calling codeGen //
+		//////////////////////////////////////////////////
+
+		Codegen.p = outFile;
+
 		astRoot.codeGen();
 
 		return P6.RESULT_CORRECT;

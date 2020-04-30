@@ -108,6 +108,17 @@ class OffsetHolder {
     public static int paramsOffset = 0;
 }
 
+// Holds the current return label, so that return statements can jump to
+// the function exit anywhere in the program.
+
+class ReturnLabelHolder {
+    public static String returnLabel;
+}
+
+class StringLabelsHolder {
+    public static Hashtable<String,String> labelsHashTable = new Hashtable<String, String>();
+}
+
 // **********************************************************************
 // %%%ASTnode class (base class for all other kinds of nodes)
 // **********************************************************************
@@ -324,10 +335,31 @@ class FnBodyNode extends ASTnode {
     }
     
     /* CODEGEN */
-    public void codeGen() {
+    public void codeGen(int paramsSize, boolean isMain) {
+
+        // Save return label *before* calling stmtlist codegen
+
+        ReturnLabelHolder.returnLabel = Codegen.nextLabel();
+
         // call codegen for stmtlist kid, decllist codegen would be called
         // from that the declListNode class
         myStmtList.codeGen();
+
+        // Function exit code
+
+        Codegen.genLabel(ReturnLabelHolder.returnLabel);
+        Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, paramsSize * -1);
+        Codegen.generate("move", Codegen.T0, Codegen.FP);
+        Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, (paramsSize + 4)* -1);
+        Codegen.generate("move", Codegen.SP, Codegen.T0);
+        if (isMain) {
+            Codegen.generate("li", Codegen.V0, "10");
+            Codegen.generate("syscall");
+        } else {
+            Codegen.generate("jr", Codegen.RA);
+        }
+        
+
     }
 
     // 2 kids
@@ -606,7 +638,20 @@ class VarDeclNode extends DeclNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        switch (myId.sym().varLocation) {
+            case LOCAL: 
+                // TODO: implement
+                break;
+            case GLOBAL:
+                Codegen.generate(".data");
+                Codegen.generate(".align 2");
+                // all of our types are 4 bytes
+                Codegen.generateLabeled("_" + myId.name(), ".space 4", "reserve 4 bytes");
+                break;
+            default:
+                ErrMsg.fatal(myId.lineNum(), myId.charNum(), 
+                        "Error: CodeGen not implemented for specified type variable declaration");
+        }
     }
 
     // 3 kids
@@ -733,7 +778,34 @@ class FnDeclNode extends DeclNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        
+        // Function preamble
+
+        Codegen.generate(".text");
+        if (myId.name().equals("main")) {
+            Codegen.generate(".globl main");
+            Codegen.genLabel("main");
+            Codegen.genLabel("__start");
+        } else {
+            Codegen.generate("_"+myId.name()+":");
+        }
+
+        // Function entry
+
+        if (myId.sym() instanceof FnSym) {
+            int paramsBytes = ((FnSym)myId.sym()).paramsSizeBytes() + 8;
+            int localsBytes = -1 * ((FnSym)myId.sym()).localsSizeBytes(); 
+            Codegen.genPush(Codegen.RA);
+            Codegen.genPush(Codegen.FP);
+            Codegen.generate("addiu", Codegen.FP, Codegen.SP, String.valueOf(paramsBytes));
+            Codegen.generate("addiu", Codegen.SP, Codegen.SP, String.valueOf(localsBytes));
+
+            // Call body codegen
+            myBody.codeGen(((FnSym)myId.sym()).paramsSizeBytes(), myId.name().equals("main"));
+        } else {
+            System.err.println("Error in method CodeGen for FnDeclNode: mySym is not an FnSym");
+        }
+        
     }
 
     // 4 kids
@@ -1240,7 +1312,18 @@ class WriteStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        myExp.codeGen();
+
+        Codegen.genPop(Codegen.A0);
+
+        // Check if the expression is a string. The only way it can be is 
+        if (myExp instanceof StringLitNode) {
+            Codegen.generate("li", Codegen.V0, "4");
+        } else {
+            Codegen.generate("li", Codegen.V0, "1");
+        }
+
+        Codegen.generate("syscall"); 
     }
 
     // 1 kid
@@ -1701,7 +1784,8 @@ class IntLitNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        Codegen.generate("li",Codegen.T0,String.valueOf(myIntVal));
+        Codegen.genPush(Codegen.T0);
     }
 
     private int myLineNum;
@@ -1743,7 +1827,24 @@ class StringLitNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+
+        String stringLabel = StringLabelsHolder.labelsHashTable.get(myStrVal);
+
+        if (stringLabel == null) {
+            // Allocate string
+            stringLabel = Codegen.nextLabel();
+            StringLabelsHolder.labelsHashTable.put(myStrVal, stringLabel);
+
+            Codegen.generate(".data");
+            Codegen.generateLabeled(stringLabel, ".asciiz ", "", myStrVal);
+        }
+        
+        // Push string address onto stack
+
+        Codegen.generate(".text");
+        Codegen.generate("la", Codegen.T0, stringLabel);
+        Codegen.genPush(Codegen.T0);
+
     }
 
     private int myLineNum;
@@ -1784,7 +1885,8 @@ class TrueNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        Codegen.generate("li",Codegen.T0,"1");
+        Codegen.genPush(Codegen.T0);
     }
 
     private int myLineNum;
@@ -1824,7 +1926,8 @@ class FalseNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        Codegen.generate("li",Codegen.T0,"0");
+        Codegen.genPush(Codegen.T0);
     }
 
     private int myLineNum;
