@@ -1075,6 +1075,12 @@ abstract class StmtNode extends ASTnode {
     abstract public void typeCheck(Type retType);
     abstract public int getSize();
     public void codeGen() { }; 
+    public void genSrcComment() { 
+        StringWriter comment = new StringWriter();
+        PrintWriter p = new PrintWriter(comment);
+        this.unparse(p, 0);
+        Codegen.generate("\n# "+ comment);
+    }
 }
 
 class AssignStmtNode extends StmtNode {
@@ -1109,7 +1115,10 @@ class AssignStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        this.genSrcComment();
+
+        myAssign.codeGen();
+        Codegen.genPop(Codegen.T0);
     }
 
     // 1 kid
@@ -1312,6 +1321,8 @@ class WriteStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
+        // Generate comment containing unparsed original code
+        this.genSrcComment();
         myExp.codeGen();
 
         Codegen.genPop(Codegen.A0);
@@ -1746,6 +1757,7 @@ abstract class ExpNode extends ASTnode {
     abstract public Type typeCheck();
     abstract public int lineNum();
     abstract public int charNum();
+    public void genAddr() { };
     public void codeGen() { };
 
 }
@@ -1780,6 +1792,11 @@ class IntLitNode extends ExpNode {
 
     public void unparse(PrintWriter p, int indent) {
         p.print(myIntVal);
+    }
+
+    public void genAddr() {
+        System.err.println("genAddr called on literal");
+        return;
     }
 
     /* CODEGEN */
@@ -1823,6 +1840,11 @@ class StringLitNode extends ExpNode {
 
     public void unparse(PrintWriter p, int indent) {
         p.print(myStrVal);
+    }
+
+    public void genAddr() {
+        System.err.println("genAddr called on literal");
+        return;
     }
 
     /* CODEGEN */
@@ -1883,6 +1905,11 @@ class TrueNode extends ExpNode {
         p.print("true");
     }
 
+    public void genAddr() {
+        System.err.println("genAddr called on literal");
+        return;
+    }
+
     /* CODEGEN */
     public void codeGen() {
         Codegen.generate("li",Codegen.T0,"1");
@@ -1922,6 +1949,11 @@ class FalseNode extends ExpNode {
 
     public void unparse(PrintWriter p, int indent) {
         p.print("false");
+    }
+
+    public void genAddr() {
+        System.err.println("genAddr called on literal");
+        return;
     }
 
     /* CODEGEN */
@@ -2023,7 +2055,37 @@ class IdNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        switch (mySym.varLocation) {
+            case LOCAL:
+                // same as param
+            case PARAM:
+                Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, mySym.offset);
+                break;
+            case GLOBAL:
+                Codegen.generate("lw", Codegen.T0, "_"+myStrVal);
+                break;
+            default:
+                System.err.println("Not implemented for specified IdNode context");
+                return;
+        }
+        Codegen.genPush(Codegen.T0);
+    }
+
+    public void genAddr() {
+        switch (mySym.varLocation) {
+            case LOCAL:
+                // same as param
+            case PARAM:
+                Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, mySym.offset);
+                break;
+            case GLOBAL:
+                Codegen.generate("la", Codegen.T0, "_"+myStrVal);
+                break;
+            default:
+                System.err.println("Not implemented for specified IdNode context");
+                return;
+        }
+        Codegen.genPush(Codegen.T0);
     }
 
     private int myLineNum;
@@ -2260,7 +2322,11 @@ class AssignNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        myExp.codeGen();
+        myLhs.genAddr();
+        Codegen.genPop(Codegen.T1);
+        Codegen.genPop(Codegen.T0);
+        Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0, "ASSIGN");
     }
 
     // 2 kids
@@ -2419,8 +2485,18 @@ abstract class BinaryExpNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        myExp1.codeGen();
+        myExp2.codeGen();
+
+        Codegen.genPop(Codegen.T1);
+        Codegen.genPop(Codegen.T0);
+
+        opCode(); 
+
+        Codegen.genPush(Codegen.T0);
     }
+
+    public void opCode() {};
 
     // two kids
     protected ExpNode myExp1;
@@ -2674,9 +2750,8 @@ class PlusNode extends ArithmeticExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("add", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
 }

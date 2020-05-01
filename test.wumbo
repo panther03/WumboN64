@@ -1,10 +1,15 @@
 
 int y;
-bool x;
+bool a;
 
 int main (int x) {
-    int y;
     int z;
+    a = true;
+    x = 4;
+    cout << a;
+    cout << "\n";
+    cout << x + 6;
+    cout << "\n";
     cout << "Hello World!";
     return x + 2;
 }

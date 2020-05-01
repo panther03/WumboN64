@@ -17,10 +17,6 @@ public class Sym {
         return type;
     }
 
-    public int getOffset() {
-        return offset;
-    }
-
     public String toString() {
         return type.toString();
     }
