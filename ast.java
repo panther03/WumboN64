@@ -2770,8 +2770,8 @@ class MinusNode extends ArithmeticExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("sub", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
 }
@@ -2791,8 +2791,9 @@ class TimesNode extends ArithmeticExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("mult", Codegen.T0, Codegen.T1);
+        Codegen.generate("mflo", Codegen.T0);
     }
 
 }
@@ -2811,8 +2812,9 @@ class DivideNode extends ArithmeticExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("div", Codegen.T0, Codegen.T1);
+        Codegen.generate("mflo", Codegen.T0);
     }
 
 }
@@ -2871,8 +2873,8 @@ class EqualsNode extends EqualityExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("seq", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
 }
@@ -2891,10 +2893,9 @@ class NotEqualsNode extends EqualityExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("sne", Codegen.T0, Codegen.T0, Codegen.T1);
     }
-
 }
 
 class LessNode extends RelationalExpNode {
@@ -2911,8 +2912,8 @@ class LessNode extends RelationalExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("slt", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
 }
@@ -2931,8 +2932,8 @@ class GreaterNode extends RelationalExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("sgt", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
 }
@@ -2951,8 +2952,8 @@ class LessEqNode extends RelationalExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("sle", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
 }
@@ -2971,8 +2972,8 @@ class GreaterEqNode extends RelationalExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("sge", Codegen.T0, Codegen.T0, Codegen.T1);
     }
 
 }
