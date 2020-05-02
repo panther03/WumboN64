@@ -1,31 +1,14 @@
-
-int y;
-bool a;
-
-int main (int x) {
+int main(int x, int y) {
     int z;
-    a = true;
-    x = 4;
-    z = 5;
+    x = 1; 
+    y = 2;
+    z = 3;
 
-    cout << a;
-    cout << "\n";
-    
-    cout << (x >= z);
-    cout << "\n";
+    cout << x;
+    cout << y;
+    cout << z;
 
-    cout << x / 4;
-    cout << "\n";
-    
-    cout << x + 6;
-    cout << "\n";
-    
-    cout << x - 2;
-    cout << "\n";
-    
-    cout << x * 4;
-    cout << "\n";
+    x = y + 3;
 
-    cout << "Hello World!";
-    return x + 2;
+    cout << x;
 }

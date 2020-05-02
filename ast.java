@@ -739,7 +739,7 @@ class FnDeclNode extends DeclNode {
             sym.addFormals(typeList);
         }
 
-        OffsetHolder.localsOffset = -8;
+        OffsetHolder.localsOffset -= 8;
         myBody.nameAnalysis(symTab); // process the function body
 
         try {
@@ -794,11 +794,11 @@ class FnDeclNode extends DeclNode {
 
         if (myId.sym() instanceof FnSym) {
             int paramsBytes = ((FnSym)myId.sym()).paramsSizeBytes() + 8;
-            int localsBytes = -1 * ((FnSym)myId.sym()).localsSizeBytes(); 
+            int localsBytes = ((FnSym)myId.sym()).localsSizeBytes(); 
             Codegen.genPush(Codegen.RA);
             Codegen.genPush(Codegen.FP);
-            Codegen.generate("addiu", Codegen.FP, Codegen.SP, String.valueOf(paramsBytes));
-            Codegen.generate("addiu", Codegen.SP, Codegen.SP, String.valueOf(localsBytes));
+            Codegen.generate("addu", Codegen.FP, Codegen.SP, String.valueOf(paramsBytes));
+            Codegen.generate("subu", Codegen.SP, Codegen.SP, String.valueOf(localsBytes));
 
             // Call body codegen
             myBody.codeGen(((FnSym)myId.sym()).paramsSizeBytes(), myId.name().equals("main"));
@@ -872,7 +872,7 @@ class FormalDeclNode extends DeclNode {
                 sym.varLocation = VarLocation.PARAM;
                 sym.offset = OffsetHolder.paramsOffset;
 
-                OffsetHolder.paramsOffset += 4;
+                OffsetHolder.paramsOffset -= 4;
             } catch (DuplicateSymException ex) {
                 System.err.println("Unexpected DuplicateSymException " +
                                    " in FormalDeclNode.nameAnalysis");
@@ -1162,7 +1162,14 @@ class PostIncStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        this.genSrcComment();
+
+        myExp.codeGen();
+        myExp.genAddr();
+        Codegen.genPop(Codegen.T1);
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("addi", Codegen.T0, Codegen.T0, "1");
+        Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0, "INCREMENT");
     }
 
     // 1 kid
@@ -1206,7 +1213,14 @@ class PostDecStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        this.genSrcComment();
+
+        myExp.codeGen();
+        myExp.genAddr();
+        Codegen.genPop(Codegen.T1);
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("addiu", Codegen.T0, Codegen.T0, "-1");
+        Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0, "DECREMENT");
     }
 
     // 1 kid
@@ -1399,9 +1413,25 @@ class IfStmtNode extends StmtNode {
         p.println("}");
     }
 
+    public void genSrcComment() { 
+        StringWriter comment = new StringWriter();
+        PrintWriter p = new PrintWriter(comment);
+        p.print("if (");
+        myExp.unparse(p, 0);
+        p.println(")");
+        Codegen.generate("\n# "+ comment);
+    }
+
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        this.genSrcComment();
+
+        String falseLabel = "FalseLab_" + Codegen.nextLabel();
+        myExp.codeGen();
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel);
+        myStmtList.codeGen();
+        Codegen.genLabel(falseLabel);
     }
 
     // e kids
@@ -1495,7 +1525,16 @@ class IfElseStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        String elseLabel = "ElseLab_" + Codegen.nextLabel();
+        String doneLabel = "DoneLab_" + Codegen.nextLabel();
+        myExp.codeGen();
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.FALSE, elseLabel);
+        myThenStmtList.codeGen();
+        Codegen.generate("b", doneLabel);
+        Codegen.genLabel(elseLabel);
+        myElseStmtList.codeGen();
+        Codegen.genLabel(doneLabel);
     }
 
     // 5 kids
@@ -1566,7 +1605,15 @@ class WhileStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        String loopLabel = "LoopLab_" + Codegen.nextLabel();
+        String doneLabel = "DoneLab_" + Codegen.nextLabel();
+        Codegen.genLabel(loopLabel);
+        myExp.codeGen();
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.FALSE, doneLabel);
+        myStmtList.codeGen();
+        Codegen.generate("b", loopLabel);
+        Codegen.genLabel(doneLabel);
     }
 
     // 3 kids
@@ -2447,6 +2494,18 @@ abstract class UnaryExpNode extends ExpNode {
         myExp.nameAnalysis(symTab);
     }
 
+    public void codeGen() {
+        myExp.codeGen();
+
+        Codegen.genPop(Codegen.T0);
+
+        opCode(); 
+
+        Codegen.genPush(Codegen.T0);
+    }
+
+    public void opCode() {};
+
     // one child
     protected ExpNode myExp;
 }
@@ -2539,8 +2598,8 @@ class UnaryMinusNode extends UnaryExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("neg", Codegen.T0, Codegen.T0);
     }
 
 }
@@ -2577,8 +2636,8 @@ class NotNode extends UnaryExpNode {
     }
 
     /* CODEGEN */
-    public void codeGen() {
-        // TODO
+    public void opCode() {
+        Codegen.generate("seq", Codegen.T0, Codegen.T0, Codegen.FALSE);
     }
 
 }
@@ -2834,7 +2893,22 @@ class AndNode extends LogicalExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        Codegen.generate("# AndNode start");
+
+        String trueLabel = "TrueLab_" + Codegen.nextLabel();
+        String doneLabel = "DoneLab_" + Codegen.nextLabel();
+        myExp1.codeGen();
+
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel);
+        Codegen.generate("li", Codegen.T0, Codegen.FALSE);
+        Codegen.genPush(Codegen.T0);
+        Codegen.generate("b", doneLabel);
+        Codegen.genLabel(trueLabel);
+        myExp2.codeGen();
+        Codegen.genLabel(doneLabel);
+
+        Codegen.generate("# AndNode end");
     }
 
 }
@@ -2854,7 +2928,23 @@ class OrNode extends LogicalExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        Codegen.generate("# OrNode start");
+
+        String falseLabel = "FalseLab_" + Codegen.nextLabel();
+        String doneLabel = "DoneLab_" + Codegen.nextLabel();
+        
+        myExp1.codeGen();
+
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel);
+        Codegen.generate("li", Codegen.T0, Codegen.TRUE);
+        Codegen.genPush(Codegen.T0);
+        Codegen.generate("b", doneLabel);
+        Codegen.genLabel(falseLabel);
+        myExp2.codeGen();
+        Codegen.genLabel(doneLabel);
+
+        Codegen.generate("# OrNode end");
     }
 
 }
