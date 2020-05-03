@@ -104,8 +104,7 @@ import java.util.*;
 
 // Holds the offset through the NameAnalysis phase as the AST is traversed.
 class OffsetHolder {
-    public static int localsOffset = 0;
-    public static int paramsOffset = 0;
+    public static int offset = 0;
 }
 
 // Holds the current return label, so that return statements can jump to
@@ -601,10 +600,10 @@ class VarDeclNode extends DeclNode {
                     }
 
                     sym = new Sym(myType.type());
-                    sym.offset = OffsetHolder.localsOffset;
+                    sym.offset = OffsetHolder.offset;
                     sym.varLocation = varlocation; 
 
-                    OffsetHolder.localsOffset -= 4;
+                    OffsetHolder.offset -= 4;
                 }
                 symTab.addDecl(name, sym);
                 myId.link(sym);
@@ -733,13 +732,13 @@ class FnDeclNode extends DeclNode {
         symTab.addScope();  // add a new scope for locals and params
 
         // process the formals
-        OffsetHolder.paramsOffset = 4;
+        OffsetHolder.offset = 0;
         List<Type> typeList = myFormalsList.nameAnalysis(symTab);
         if (sym != null) {
             sym.addFormals(typeList);
         }
 
-        OffsetHolder.localsOffset -= 8;
+        OffsetHolder.offset -= 8;
         myBody.nameAnalysis(symTab); // process the function body
 
         try {
@@ -870,9 +869,9 @@ class FormalDeclNode extends DeclNode {
                 myId.link(sym);
 
                 sym.varLocation = VarLocation.PARAM;
-                sym.offset = OffsetHolder.paramsOffset;
+                sym.offset = OffsetHolder.offset;
 
-                OffsetHolder.paramsOffset -= 4;
+                OffsetHolder.offset -= 4;
             } catch (DuplicateSymException ex) {
                 System.err.println("Unexpected DuplicateSymException " +
                                    " in FormalDeclNode.nameAnalysis");

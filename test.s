@@ -1,3 +1,9 @@
+	.data
+	.align 2
+_y:	.space 4	# reserve 4 bytes
+	.data
+	.align 2
+_a:	.space 4	# reserve 4 bytes
 	.text
 	.globl main
 main:
@@ -6,15 +12,15 @@ __start:
 	subu  $sp, $sp, 4
 	sw    $fp, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
-	addu  $fp, $sp, 16
+	addu  $fp, $sp, 12
 	subu  $sp, $sp, 4
 	
-# x(int) = 1;
+# a(bool) = true;
 
 	li    $t0, 1
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
-	la    $t0, 4($fp)
+	la    $t0, _a
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $t1, 4($sp)	#POP
@@ -25,12 +31,12 @@ __start:
 	lw    $t0, 4($sp)	#POP
 	addu  $sp, $sp, 4
 	
-# y(int) = 2;
+# x(int) = 4;
 
-	li    $t0, 2
+	li    $t0, 4
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
-	la    $t0, 8($fp)
+	la    $t0, 0($fp)
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $t1, 4($sp)	#POP
@@ -41,12 +47,12 @@ __start:
 	lw    $t0, 4($sp)	#POP
 	addu  $sp, $sp, 4
 	
-# z(int) = 3;
+# z(int) = 5;
 
-	li    $t0, 3
+	li    $t0, 5
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
-	la    $t0, -8($fp)
+	la    $t0, -12($fp)
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $t1, 4($sp)	#POP
@@ -56,10 +62,25 @@ __start:
 	sw    $t0, 0($t1)	#ASSIGN
 	lw    $t0, 4($sp)	#POP
 	addu  $sp, $sp, 4
+	
+# x(int)++;
+
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	la    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	addi  $t0, $t0, 1
+	sw    $t0, 0($t1)	#INCREMENT
 	
 # cout << x(int);
 
-	lw    $t0, 4($fp)
+	lw    $t0, 0($fp)
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $a0, 4($sp)	#POP
@@ -67,19 +88,22 @@ __start:
 	li    $v0, 1
 	syscall
 	
-# cout << y(int);
+# cout << "\n";
 
-	lw    $t0, 8($fp)
+	.data
+.L1:	.asciiz "\n"
+	.text
+	la    $t0, .L1
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $a0, 4($sp)	#POP
 	addu  $sp, $sp, 4
-	li    $v0, 1
+	li    $v0, 4
 	syscall
 	
 # cout << z(int);
 
-	lw    $t0, -8($fp)
+	lw    $t0, -12($fp)
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $a0, 4($sp)	#POP
@@ -87,12 +111,154 @@ __start:
 	li    $v0, 1
 	syscall
 	
-# x(int) = (y(int) + 3);
+# cout << "\n";
 
-	lw    $t0, 8($fp)
+	.text
+	la    $t0, .L1
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
-	li    $t0, 3
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+	
+# cout << (x(int) == z(int));
+
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t0, -12($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	seq   $t0, $t0, $t1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 1
+	syscall
+	
+# cout << "\n";
+
+	.text
+	la    $t0, .L1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+	
+# if (((x(int) == z(int)) || (x(int) == 4)))
+
+	# OrNode start
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t0, -12($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	seq   $t0, $t0, $t1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	beq   $t0, 0, FalseLab_.L3
+	li    $t0, 1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	b     DoneLab_.L4
+FalseLab_.L3:
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	li    $t0, 4
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	seq   $t0, $t0, $t1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+DoneLab_.L4:
+	# OrNode end
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	beq   $t0, 0, FalseLab_.L2
+	
+# cout << "test";
+
+	.data
+.L5:	.asciiz "test"
+	.text
+	la    $t0, .L5
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+	
+# cout << "\n";
+
+	.text
+	la    $t0, .L1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+FalseLab_.L2:
+	
+# cout << (x(int) / 4);
+
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	li    $t0, 4
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	div   $t0, $t1
+	mflo  $t0
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 1
+	syscall
+	
+# cout << "\n";
+
+	.text
+	la    $t0, .L1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+	
+# cout << (x(int) + 6);
+
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	li    $t0, 6
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $t1, 4($sp)	#POP
@@ -102,30 +268,101 @@ __start:
 	add   $t0, $t0, $t1
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
-	la    $t0, 4($fp)
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 1
+	syscall
+	
+# cout << "\n";
+
+	.text
+	la    $t0, .L1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+	
+# cout << (x(int) - 2);
+
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	li    $t0, 2
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $t1, 4($sp)	#POP
 	addu  $sp, $sp, 4
 	lw    $t0, 4($sp)	#POP
 	addu  $sp, $sp, 4
-	sw    $t0, 0($t1)	#ASSIGN
-	lw    $t0, 4($sp)	#POP
-	addu  $sp, $sp, 4
-	
-# cout << x(int);
-
-	lw    $t0, 4($fp)
+	sub   $t0, $t0, $t1
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $a0, 4($sp)	#POP
 	addu  $sp, $sp, 4
 	li    $v0, 1
 	syscall
+	
+# cout << "\n";
+
+	.text
+	la    $t0, .L1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+	
+# cout << (x(int) * 4);
+
+	lw    $t0, 0($fp)
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	li    $t0, 4
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	mult  $t0, $t1
+	mflo  $t0
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 1
+	syscall
+	
+# cout << "\n";
+
+	.text
+	la    $t0, .L1
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
+	
+# cout << "Hello World!";
+
+	.data
+.L6:	.asciiz "Hello World!"
+	.text
+	la    $t0, .L6
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $a0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	li    $v0, 4
+	syscall
 .L0:
-	lw    $ra, -8($fp)
+	lw    $ra, -4($fp)
 	move  $t0, $fp
-	lw    $ra, -12($fp)
+	lw    $ra, -8($fp)
 	move  $sp, $t0
 	li    $v0, 10
 	syscall
