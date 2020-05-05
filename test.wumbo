@@ -2,11 +2,26 @@
 int y;
 bool a;
 
+int f (int g) {
+    return g + 2 * 3;
+}
+
+int fac(int n) {
+    if (n == 0) {
+        return 1;
+    } else {
+        return n * fac(n - 1);
+    }
+}
+
+
 int main (int x) {
     int z;
+    int test;
     a = true;
     x = 4;
     z = 5;
+    
 
     // cout << x;
 
@@ -39,6 +54,15 @@ int main (int x) {
     cout << x * 4;
     cout << "\n";
 
-    cout << "Hello World!";
+    cout << "Hello World!\n";
+
+    cout << f(3);
+    cout << "\n";
+
+    cin >> test;
+    cout << test;
+
+    cout << fac(5);
+    cout << "\n";
     return x + 2;
 }

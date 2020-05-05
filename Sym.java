@@ -21,11 +21,6 @@ public class Sym {
         return type.toString();
     }
 
-    /*public String genMemLoc() {
-        // TODO: implement
-        // return string for memory location access
-        return "";
-    }*/
 }
 
 /**

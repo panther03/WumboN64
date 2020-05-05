@@ -155,19 +155,6 @@ public class P6 {
 			return P6.RESULT_TYPE_ERROR;
 		}
 
-		// REMOVE THIS
-
-		PrintWriter debug_outFile; 
-
-		try {
-        	debug_outFile = new PrintWriter("test.out");
-        } catch (FileNotFoundException ex) {
-        	debug_outFile = null;
-        }
-
-
-		astRoot.unparse(debug_outFile, 0);
-
 		//////////////////////////////////////////////////
 		// Setting up the PrintWriter & calling codeGen //
 		//////////////////////////////////////////////////

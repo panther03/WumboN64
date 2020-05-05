@@ -218,6 +218,7 @@ class DeclListNode extends ASTnode {
             }
         }
 
+        // Report an error, because the main function does not exist.
         if (!mainFunctionExists && isGlobal) {
             ErrMsg.fatal(0, 0,  "No main function");
         }
@@ -346,10 +347,10 @@ class FnBodyNode extends ASTnode {
 
         // Function exit code
 
-        Codegen.genLabel(ReturnLabelHolder.returnLabel);
+        Codegen.genLabel(ReturnLabelHolder.returnLabel); // generate label from before here
         Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, paramsSize * -1);
         Codegen.generate("move", Codegen.T0, Codegen.FP);
-        Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, (paramsSize + 4)* -1);
+        Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, (paramsSize + 4)* -1);
         Codegen.generate("move", Codegen.SP, Codegen.T0);
         if (isMain) {
             Codegen.generate("li", Codegen.V0, "10");
@@ -637,19 +638,12 @@ class VarDeclNode extends DeclNode {
 
     /* CODEGEN */
     public void codeGen() {
-        switch (myId.sym().varLocation) {
-            case LOCAL: 
-                // TODO: implement
-                break;
-            case GLOBAL:
-                Codegen.generate(".data");
-                Codegen.generate(".align 2");
-                // all of our types are 4 bytes
-                Codegen.generateLabeled("_" + myId.name(), ".space 4", "reserve 4 bytes");
-                break;
-            default:
-                ErrMsg.fatal(myId.lineNum(), myId.charNum(), 
-                        "Error: CodeGen not implemented for specified type variable declaration");
+        // We only care about generating code for global variable declarations.
+        if (myId.sym().varLocation == VarLocation.GLOBAL) {
+            Codegen.generate(".data");
+            Codegen.generate(".align 2");
+            // all of our types are 4 bytes
+            Codegen.generateLabeled("_" + myId.name(), ".space 4", "reserve 4 bytes");
         }
     }
 
@@ -711,9 +705,6 @@ class FnDeclNode extends DeclNode {
                 sym = new FnSym(myType.type(), myFormalsList.length(), myLocalsSize);
                 symTab.addDecl(name, sym);
                 myId.link(sym);
-                
-                System.out.println(sym.localsSizeBytes());
-                System.out.println(sym.paramsSizeBytes());
             } catch (DuplicateSymException ex) {
                 System.err.println("Unexpected DuplicateSymException " +
                                    " in FnDeclNode.nameAnalysis");
@@ -732,13 +723,13 @@ class FnDeclNode extends DeclNode {
         symTab.addScope();  // add a new scope for locals and params
 
         // process the formals
-        OffsetHolder.offset = 0;
+        OffsetHolder.offset = 0; // initalize offset
         List<Type> typeList = myFormalsList.nameAnalysis(symTab);
         if (sym != null) {
             sym.addFormals(typeList);
         }
 
-        OffsetHolder.offset -= 8;
+        OffsetHolder.offset -= 8; // decrease offset by 8 to account for return adddress and control link
         myBody.nameAnalysis(symTab); // process the function body
 
         try {
@@ -1074,6 +1065,7 @@ abstract class StmtNode extends ASTnode {
     abstract public void typeCheck(Type retType);
     abstract public int getSize();
     public void codeGen() { }; 
+    // This method generates a comment in the assembly file with an unparsed version of the statement.
     public void genSrcComment() { 
         StringWriter comment = new StringWriter();
         PrintWriter p = new PrintWriter(comment);
@@ -1116,7 +1108,9 @@ class AssignStmtNode extends StmtNode {
     public void codeGen() {
         this.genSrcComment();
 
+        // Call codeGen on the asssign statement
         myAssign.codeGen();
+        // Make sure the result is not left on the stack
         Codegen.genPop(Codegen.T0);
     }
 
@@ -1163,11 +1157,13 @@ class PostIncStmtNode extends StmtNode {
     public void codeGen() {
         this.genSrcComment();
 
+        // Get the ID's address and value; pop into T1 and T0 respectively
         myExp.codeGen();
         myExp.genAddr();
         Codegen.genPop(Codegen.T1);
         Codegen.genPop(Codegen.T0);
-        Codegen.generate("addi", Codegen.T0, Codegen.T0, "1");
+        // Increment
+        Codegen.generate("addiu", Codegen.T0, Codegen.T0, "1");
         Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0, "INCREMENT");
     }
 
@@ -1214,10 +1210,12 @@ class PostDecStmtNode extends StmtNode {
     public void codeGen() {
         this.genSrcComment();
 
+        // Get the ID's address and value; pop into T1 and T0 respectively
         myExp.codeGen();
         myExp.genAddr();
         Codegen.genPop(Codegen.T1);
         Codegen.genPop(Codegen.T0);
+        // Decrement
         Codegen.generate("addiu", Codegen.T0, Codegen.T0, "-1");
         Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0, "DECREMENT");
     }
@@ -1274,7 +1272,17 @@ class ReadStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        this.genSrcComment();
+
+        // Get the address of the destination ID
+        myExp.genAddr();
+        
+        // Perform read operation
+        Codegen.generate("li", Codegen.V0, "5");
+        Codegen.generate("syscall");
+        
+        Codegen.genPop(Codegen.T0); // load address into T0
+        Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0, "READ"); // store result from syscall at T0
     }
 
     // 1 kid (actually can only be an IdNode or an ArrayExpNode)
@@ -1334,19 +1342,20 @@ class WriteStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // Generate comment containing unparsed original code
         this.genSrcComment();
-        myExp.codeGen();
 
+        // Compute expression result and pop into A0
+        myExp.codeGen();
         Codegen.genPop(Codegen.A0);
 
-        // Check if the expression is a string. The only way it can be is 
+        // Check if the expression is a string. The only way it can be is if it is a literal, so we check if it's StringLitNode
         if (myExp instanceof StringLitNode) {
             Codegen.generate("li", Codegen.V0, "4");
         } else {
             Codegen.generate("li", Codegen.V0, "1");
         }
 
+        // Perform write operation
         Codegen.generate("syscall"); 
     }
 
@@ -1426,8 +1435,10 @@ class IfStmtNode extends StmtNode {
         this.genSrcComment();
 
         String falseLabel = "FalseLab_" + Codegen.nextLabel();
+        // Calculate expression result
         myExp.codeGen();
         Codegen.genPop(Codegen.T0);
+        // Jump past myStmtList if the result is false
         Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel);
         myStmtList.codeGen();
         Codegen.genLabel(falseLabel);
@@ -1522,14 +1533,28 @@ class IfElseStmtNode extends StmtNode {
         p.println("}");
     }
 
+    public void genSrcComment() { 
+        StringWriter comment = new StringWriter();
+        PrintWriter p = new PrintWriter(comment);
+        p.print("if (");
+        myExp.unparse(p, 0);
+        p.println(")");
+        Codegen.generate("\n# "+ comment);
+    }
+
     /* CODEGEN */
     public void codeGen() {
+        this.genSrcComment();
+
         String elseLabel = "ElseLab_" + Codegen.nextLabel();
         String doneLabel = "DoneLab_" + Codegen.nextLabel();
+        // Calculate expression result
         myExp.codeGen();
         Codegen.genPop(Codegen.T0);
+        // Jump to else statement list if the expression is false
         Codegen.generate("beq", Codegen.T0, Codegen.FALSE, elseLabel);
         myThenStmtList.codeGen();
+        // Jump to end
         Codegen.generate("b", doneLabel);
         Codegen.genLabel(elseLabel);
         myElseStmtList.codeGen();
@@ -1602,15 +1627,27 @@ class WhileStmtNode extends StmtNode {
         p.println("}");
     }
 
+    public void genSrcComment() { 
+        StringWriter comment = new StringWriter();
+        PrintWriter p = new PrintWriter(comment);
+        p.print("while (");
+        myExp.unparse(p, 0);
+        p.println(")");
+        Codegen.generate("\n# "+ comment);
+    }
+
     /* CODEGEN */
     public void codeGen() {
         String loopLabel = "LoopLab_" + Codegen.nextLabel();
         String doneLabel = "DoneLab_" + Codegen.nextLabel();
         Codegen.genLabel(loopLabel);
+        // Calculate expression result
         myExp.codeGen();
         Codegen.genPop(Codegen.T0);
+        // Jump past loop if expression is false
         Codegen.generate("beq", Codegen.T0, Codegen.FALSE, doneLabel);
         myStmtList.codeGen();
+        // Loop back to start
         Codegen.generate("b", loopLabel);
         Codegen.genLabel(doneLabel);
     }
@@ -1718,7 +1755,9 @@ class CallStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        // Call CallExpNode's codegen and pop from stack 
+        myCall.codeGen();
+        Codegen.genPop(Codegen.V0);
     }
 
     // 1 kid
@@ -1783,7 +1822,13 @@ class ReturnStmtNode extends StmtNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        // If there is an expression rather than a blank return statement, call codeGen and pop into V0
+        if (myExp != null) {
+            myExp.codeGen();
+            Codegen.genPop(Codegen.V0);
+        }
+
+        Codegen.generate("j", ReturnLabelHolder.returnLabel);
     }
 
     // 1 kid
@@ -1847,6 +1892,7 @@ class IntLitNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
+        // Push int value onto stack
         Codegen.generate("li",Codegen.T0,String.valueOf(myIntVal));
         Codegen.genPush(Codegen.T0);
     }
@@ -1896,8 +1942,10 @@ class StringLitNode extends ExpNode {
     /* CODEGEN */
     public void codeGen() {
 
+        // search in string hash table for the string
         String stringLabel = StringLabelsHolder.labelsHashTable.get(myStrVal);
 
+        // check if there's already a label for the specified string
         if (stringLabel == null) {
             // Allocate string
             stringLabel = Codegen.nextLabel();
@@ -1958,6 +2006,7 @@ class TrueNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
+        // Push 1 onto stack
         Codegen.generate("li",Codegen.T0,"1");
         Codegen.genPush(Codegen.T0);
     }
@@ -2004,6 +2053,7 @@ class FalseNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
+        // Push 0 onto stack
         Codegen.generate("li",Codegen.T0,"0");
         Codegen.genPush(Codegen.T0);
     }
@@ -2105,9 +2155,11 @@ class IdNode extends ExpNode {
             case LOCAL:
                 // same as param
             case PARAM:
+                // Load into T0 based on an offset from FP
                 Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, mySym.offset);
                 break;
             case GLOBAL:
+                // Load into T0 based on label
                 Codegen.generate("lw", Codegen.T0, "_"+myStrVal);
                 break;
             default:
@@ -2122,9 +2174,11 @@ class IdNode extends ExpNode {
             case LOCAL:
                 // same as param
             case PARAM:
+                // Load address into T0 based on an offset from FP
                 Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, mySym.offset);
                 break;
             case GLOBAL:
+                // Load address into T0 based on a label
                 Codegen.generate("la", Codegen.T0, "_"+myStrVal);
                 break;
             default:
@@ -2132,6 +2186,14 @@ class IdNode extends ExpNode {
                 return;
         }
         Codegen.genPush(Codegen.T0);
+    }
+
+    public void genJumpAndLink() {
+        if (myStrVal.equals("main")) {
+            Codegen.generate("jal", "main");
+        } else {
+            Codegen.generate("jal", "_" + myStrVal);
+        }
     }
 
     private int myLineNum;
@@ -2372,6 +2434,7 @@ class AssignNode extends ExpNode {
         myLhs.genAddr();
         Codegen.genPop(Codegen.T1);
         Codegen.genPop(Codegen.T0);
+        Codegen.genPush(Codegen.T0);
         Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0, "ASSIGN");
     }
 
@@ -2456,7 +2519,15 @@ class CallExpNode extends ExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        // TODO
+        // Call codegen on all parameters, leaving them on the stack
+        myExpList.codeGen();
+        // Generate jal instruction
+        myId.genJumpAndLink();
+        // Push function result onto stack
+        /* (note, V0 might contain nonsense data if the function is void,
+            but in that case it won't be used as an expression,
+            and the statement calling codegen here will pop the result.) */
+        Codegen.genPush(Codegen.V0);
     }
 
     // 2 kids
@@ -2493,7 +2564,9 @@ abstract class UnaryExpNode extends ExpNode {
         myExp.nameAnalysis(symTab);
     }
 
+    // All unary expressions follow the same template, so we simply use opCode() for the actual calculations.
     public void codeGen() {
+
         myExp.codeGen();
 
         Codegen.genPop(Codegen.T0);
@@ -2541,7 +2614,7 @@ abstract class BinaryExpNode extends ExpNode {
         myExp2.nameAnalysis(symTab);
     }
 
-    /* CODEGEN */
+    // All unary expressions follow the same template, so we simply use opCode() for the actual calculations.
     public void codeGen() {
         myExp1.codeGen();
         myExp2.codeGen();
@@ -2596,7 +2669,6 @@ class UnaryMinusNode extends UnaryExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("neg", Codegen.T0, Codegen.T0);
     }
@@ -2634,7 +2706,6 @@ class NotNode extends UnaryExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("seq", Codegen.T0, Codegen.T0, Codegen.FALSE);
     }
@@ -2827,7 +2898,6 @@ class MinusNode extends ArithmeticExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("sub", Codegen.T0, Codegen.T0, Codegen.T1);
     }
@@ -2848,7 +2918,6 @@ class TimesNode extends ArithmeticExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("mult", Codegen.T0, Codegen.T1);
         Codegen.generate("mflo", Codegen.T0);
@@ -2869,7 +2938,6 @@ class DivideNode extends ArithmeticExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("div", Codegen.T0, Codegen.T1);
         Codegen.generate("mflo", Codegen.T0);
@@ -2890,20 +2958,23 @@ class AndNode extends LogicalExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void codeGen() {
         Codegen.generate("# AndNode start");
 
         String trueLabel = "TrueLab_" + Codegen.nextLabel();
         String doneLabel = "DoneLab_" + Codegen.nextLabel();
+        // Calculate LHS & pop into T0
         myExp1.codeGen();
-
         Codegen.genPop(Codegen.T0);
+
+        // if LHS is false, we know the expression is false. Otherwise, jump to trueLabel.
         Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel);
+        // Push false onto stack
         Codegen.generate("li", Codegen.T0, Codegen.FALSE);
         Codegen.genPush(Codegen.T0);
         Codegen.generate("b", doneLabel);
         Codegen.genLabel(trueLabel);
+        // Expression result is that of the RHS, which is left on the stack.
         myExp2.codeGen();
         Codegen.genLabel(doneLabel);
 
@@ -2932,14 +3003,18 @@ class OrNode extends LogicalExpNode {
         String falseLabel = "FalseLab_" + Codegen.nextLabel();
         String doneLabel = "DoneLab_" + Codegen.nextLabel();
         
+        // Calculate LHS & pop into T0
         myExp1.codeGen();
-
         Codegen.genPop(Codegen.T0);
+
+        // if LHS is true, we know the expression is true. Otherwise, jump to falseLabel.
         Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel);
+        // Push true onto stack
         Codegen.generate("li", Codegen.T0, Codegen.TRUE);
         Codegen.genPush(Codegen.T0);
         Codegen.generate("b", doneLabel);
         Codegen.genLabel(falseLabel);
+        // Expression result is that of the RHS, which is left on the stack.
         myExp2.codeGen();
         Codegen.genLabel(doneLabel);
 
@@ -2961,7 +3036,6 @@ class EqualsNode extends EqualityExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("seq", Codegen.T0, Codegen.T0, Codegen.T1);
     }
@@ -2981,7 +3055,6 @@ class NotEqualsNode extends EqualityExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("sne", Codegen.T0, Codegen.T0, Codegen.T1);
     }
@@ -3000,7 +3073,6 @@ class LessNode extends RelationalExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("slt", Codegen.T0, Codegen.T0, Codegen.T1);
     }
@@ -3020,7 +3092,6 @@ class GreaterNode extends RelationalExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("sgt", Codegen.T0, Codegen.T0, Codegen.T1);
     }
@@ -3040,7 +3111,6 @@ class LessEqNode extends RelationalExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("sle", Codegen.T0, Codegen.T0, Codegen.T1);
     }
@@ -3060,7 +3130,6 @@ class GreaterEqNode extends RelationalExpNode {
         p.print(")");
     }
 
-    /* CODEGEN */
     public void opCode() {
         Codegen.generate("sge", Codegen.T0, Codegen.T0, Codegen.T1);
     }
