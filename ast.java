@@ -353,8 +353,8 @@ class FnBodyNode extends ASTnode {
         Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, (paramsSize + 4)* -1);
         Codegen.generate("move", Codegen.SP, Codegen.T0);
         if (isMain) {
-            Codegen.generate("li", Codegen.V0, "10");
-            Codegen.generate("syscall");
+            //Codegen.generate("li", Codegen.V0, "10");
+            //Codegen.generate("syscall");
         } else {
             Codegen.generate("jr", Codegen.RA);
         }
@@ -640,10 +640,10 @@ class VarDeclNode extends DeclNode {
     public void codeGen() {
         // We only care about generating code for global variable declarations.
         if (myId.sym().varLocation == VarLocation.GLOBAL) {
-            Codegen.generate(".data");
-            Codegen.generate(".align 2");
+            //Codegen.generate(".data");
+            Codegen.generate("align(2)");
             // all of our types are 4 bytes
-            Codegen.generateLabeled("_" + myId.name(), ".space 4", "reserve 4 bytes");
+            Codegen.generateLabeled("_" + myId.name(), "\ndw 0x00000000", "reserve 4 bytes");
         }
     }
 
@@ -771,11 +771,11 @@ class FnDeclNode extends DeclNode {
         
         // Function preamble
 
-        Codegen.generate(".text");
+        //Codegen.generate(".text");
         if (myId.name().equals("main")) {
-            Codegen.generate(".globl main");
+            //Codegen.generate(".globl main");
             Codegen.genLabel("main");
-            Codegen.genLabel("__start");
+            //Codegen.genLabel("__start");
         } else {
             Codegen.generate("_"+myId.name()+":");
         }
@@ -785,10 +785,17 @@ class FnDeclNode extends DeclNode {
         if (myId.sym() instanceof FnSym) {
             int paramsBytes = ((FnSym)myId.sym()).paramsSizeBytes() + 8;
             int localsBytes = ((FnSym)myId.sym()).localsSizeBytes(); 
-            Codegen.genPush(Codegen.RA);
-            Codegen.genPush(Codegen.FP);
-            Codegen.generate("addu", Codegen.FP, Codegen.SP, String.valueOf(paramsBytes));
-            Codegen.generate("subu", Codegen.SP, Codegen.SP, String.valueOf(localsBytes));
+            if (myId.name().equals("main")) {
+                Codegen.generate("addiu", Codegen.FP, Codegen.SP, "0");
+                Codegen.generate("addiu", Codegen.SP, Codegen.FP, String.valueOf(-1 * ((FnSym)myId.sym()).paramsSizeBytes()));
+                Codegen.genPush(Codegen.R0); // Dummy
+                Codegen.genPush(Codegen.R0);
+            } else {
+                Codegen.genPush(Codegen.RA);
+                Codegen.genPush(Codegen.FP);
+            }
+                Codegen.generate("addiu", Codegen.FP, Codegen.SP, String.valueOf(paramsBytes));
+                Codegen.generate("addiu", Codegen.SP, Codegen.SP, String.valueOf(-1 * localsBytes));
 
             // Call body codegen
             myBody.codeGen(((FnSym)myId.sym()).paramsSizeBytes(), myId.name().equals("main"));
@@ -1070,7 +1077,7 @@ abstract class StmtNode extends ASTnode {
         StringWriter comment = new StringWriter();
         PrintWriter p = new PrintWriter(comment);
         this.unparse(p, 0);
-        Codegen.generate("\n# "+ comment);
+        Codegen.generate("\n// "+ comment);
     }
 }
 
@@ -1346,17 +1353,16 @@ class WriteStmtNode extends StmtNode {
 
         // Compute expression result and pop into A0
         myExp.codeGen();
-        Codegen.genPop(Codegen.A0);
 
         // Check if the expression is a string. The only way it can be is if it is a literal, so we check if it's StringLitNode
         if (myExp instanceof StringLitNode) {
-            Codegen.generate("li", Codegen.V0, "4");
+            Codegen.genPop(Codegen.A2);
+            int length = ((StringLitNode)myExp).strVal().length();
+            Codegen.generate(String.format("PrintString($A0100000, 128, 100, FontBlack, Text, %d)",length));
         } else {
-            Codegen.generate("li", Codegen.V0, "1");
+            Codegen.genPop(Codegen.T0);
+            Codegen.generate("PrintInt($A0100000, 128, 100, FontRed, t0)");
         }
-
-        // Perform write operation
-        Codegen.generate("syscall"); 
     }
 
     // 1 kid
@@ -1427,7 +1433,7 @@ class IfStmtNode extends StmtNode {
         p.print("if (");
         myExp.unparse(p, 0);
         p.println(")");
-        Codegen.generate("\n# "+ comment);
+        Codegen.generate("\n// "+ comment);
     }
 
     /* CODEGEN */
@@ -1539,7 +1545,7 @@ class IfElseStmtNode extends StmtNode {
         p.print("if (");
         myExp.unparse(p, 0);
         p.println(")");
-        Codegen.generate("\n# "+ comment);
+        Codegen.generate("\n// "+ comment);
     }
 
     /* CODEGEN */
@@ -1633,7 +1639,7 @@ class WhileStmtNode extends StmtNode {
         p.print("while (");
         myExp.unparse(p, 0);
         p.println(")");
-        Codegen.generate("\n# "+ comment);
+        Codegen.generate("\n// "+ comment);
     }
 
     /* CODEGEN */
@@ -1923,6 +1929,10 @@ class StringLitNode extends ExpNode {
         return myCharNum;
     }
 
+    public String strVal() {
+        return myStrVal;
+    }
+
     /**
      * typeCheck
      */
@@ -2160,7 +2170,8 @@ class IdNode extends ExpNode {
                 break;
             case GLOBAL:
                 // Load into T0 based on label
-                Codegen.generate("lw", Codegen.T0, "_"+myStrVal);
+                Codegen.generate("la", Codegen.A1, "_"+myStrVal);
+                Codegen.generateIndexed("lw", Codegen.T0, Codegen.A1, 0);
                 break;
             default:
                 System.err.println("Not implemented for specified IdNode context");
@@ -2175,7 +2186,8 @@ class IdNode extends ExpNode {
                 // same as param
             case PARAM:
                 // Load address into T0 based on an offset from FP
-                Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, mySym.offset);
+                Codegen.generate("li", Codegen.T0, Codegen.FALSE);
+                Codegen.generate("addiu", Codegen.T0, Codegen.FP, Integer.toString(mySym.offset));
                 break;
             case GLOBAL:
                 // Load address into T0 based on a label
@@ -2523,6 +2535,7 @@ class CallExpNode extends ExpNode {
         myExpList.codeGen();
         // Generate jal instruction
         myId.genJumpAndLink();
+        Codegen.generate("nop");
         // Push function result onto stack
         /* (note, V0 might contain nonsense data if the function is void,
             but in that case it won't be used as an expression,

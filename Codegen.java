@@ -30,14 +30,17 @@ public class Codegen {
     public static final String FALSE = "0";
 
     // registers
-    public static final String FP = "$fp";
-    public static final String SP = "$sp";
-    public static final String RA = "$ra";
-    public static final String V0 = "$v0";
-    public static final String V1 = "$v1";
-    public static final String A0 = "$a0";
-    public static final String T0 = "$t0";
-    public static final String T1 = "$t1";
+    public static final String FP = "r30";
+    public static final String SP = "sp";
+    public static final String RA = "r31";
+    public static final String R0 = "r0";
+    public static final String V0 = "v0";
+    public static final String V1 = "v1";
+    public static final String A0 = "a0";
+    public static final String A1 = "a1";
+    public static final String A2 = "a2";
+    public static final String T0 = "t0";
+    public static final String T1 = "t1";
 
 
     // for pretty printing generated code
@@ -75,7 +78,7 @@ public class Codegen {
             }
         }
         if (comment != "")
-            p.print("\t\t#" + comment);
+            p.print("\t\t//" + comment);
         p.println();
     }
 
@@ -173,7 +176,7 @@ public class Codegen {
             p.print(" ");
         p.print(arg1 + ", " + arg3 + "(" + arg2 + ")");
         if (comment != "")
-            p.print("\t#" + comment);
+            p.print("\t//" + comment);
         p.println();
     }
 
@@ -199,7 +202,7 @@ public class Codegen {
             p.print(arg1);
         }
         if (comment != "")
-            p.print("\t# " + comment);
+            p.print("\t// " + comment);
         p.println();
     }
 
@@ -214,7 +217,7 @@ public class Codegen {
     // **********************************************************************
     public static void genPush(String s) {
         generateIndexed("sw", s, SP, 0, "PUSH");
-        generate("subu", SP, SP, 4);
+        generate("addiu", SP, SP, -4);
     }
 
     // **********************************************************************
@@ -223,7 +226,7 @@ public class Codegen {
     // **********************************************************************
     public static void genPop(String s) {
         generateIndexed("lw", s, SP, 4, "POP");
-        generate("addu", SP, SP, 4);
+        generate("addiu", SP, SP, 4);
     }
 
     // **********************************************************************
@@ -234,7 +237,7 @@ public class Codegen {
     public static void genLabel(String label, String comment) {
         p.print(label + ":");
         if (comment != "")
-            p.print("\t\t" + "# " + comment);
+            p.print("\t\t" + "// " + comment);
         p.println();
     }
 
@@ -248,7 +251,7 @@ public class Codegen {
     // **********************************************************************
     public static String nextLabel() {
         Integer k = new Integer(currLabel++);
-        String tmp = ".L" + k;
+        String tmp = "_L" + k;
         return(tmp);
     }
 }
