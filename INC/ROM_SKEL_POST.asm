@@ -1,6 +1,5 @@
-Loop:
-  j Loop
-  nop // Delay Slot
+Greeting:
+  db "Welcome to Wumbo!"
 
 align(4) // Align 32-Bit
 insert FontBlack, "INC/FontBlack8x8.bin"

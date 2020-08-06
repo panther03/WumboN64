@@ -114,8 +114,15 @@ class ReturnLabelHolder {
     public static String returnLabel;
 }
 
-class StringLabelsHolder {
+class StringDataHolder {
     public static Hashtable<String,String> labelsHashTable = new Hashtable<String, String>();
+    public static StringWriter StringsSection = new StringWriter();
+}
+
+class N64ScreenData {
+    public static final String FontAddr = "$A0100000";
+    public static int ScreenX = 0;
+    public static int ScreenY = 16;
 }
 
 // **********************************************************************
@@ -166,6 +173,14 @@ class ProgramNode extends ASTnode {
     /* CODEGEN */
     public void codeGen() {
         myDeclList.codeGen();
+        Codegen.generate("Loop:");
+        Codegen.generate("j Loop");
+        Codegen.generate("nop");
+        GenerateQueuedStrings();
+    }
+
+    private void GenerateQueuedStrings() {
+        Codegen.p.print(StringDataHolder.StringsSection);
     }
 
     // 1 kid
@@ -357,6 +372,7 @@ class FnBodyNode extends ASTnode {
             //Codegen.generate("syscall");
         } else {
             Codegen.generate("jr", Codegen.RA);
+            Codegen.generate("nop");
         }
         
 
@@ -1281,15 +1297,17 @@ class ReadStmtNode extends StmtNode {
     public void codeGen() {
         this.genSrcComment();
 
+        ErrMsg.fatal(0, 0, "ReadStmtNode unimplemented");
+
         // Get the address of the destination ID
-        myExp.genAddr();
+        /*myExp.genAddr();
         
         // Perform read operation
         Codegen.generate("li", Codegen.V0, "5");
         Codegen.generate("syscall");
         
         Codegen.genPop(Codegen.T0); // load address into T0
-        Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0, "READ"); // store result from syscall at T0
+        Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0, "READ"); // store result from syscall at T0*/
     }
 
     // 1 kid (actually can only be an IdNode or an ArrayExpNode)
@@ -1357,12 +1375,14 @@ class WriteStmtNode extends StmtNode {
         // Check if the expression is a string. The only way it can be is if it is a literal, so we check if it's StringLitNode
         if (myExp instanceof StringLitNode) {
             Codegen.genPop(Codegen.A2);
-            int length = ((StringLitNode)myExp).strVal().length();
-            Codegen.generate(String.format("PrintString($A0100000, 128, 100, FontBlack, Text, %d)",length));
+            //int length = ((StringLitNode)myExp).strVal().length() <= 2 ? 0 : ((StringLitNode)myExp).strVal().length() -1;
+            System.out.println(((StringLitNode)myExp).strVal());
+            Codegen.generate(String.format("PrintString(%s, %d, %d, FontBlack)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY));
         } else {
             Codegen.genPop(Codegen.T0);
-            Codegen.generate("PrintInt($A0100000, 128, 100, FontRed, t0)");
+            Codegen.generate(String.format("PrintInt(%s, %d, %d, FontRed, t0)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY));
         }
+        N64ScreenData.ScreenY += 16;
     }
 
     // 1 kid
@@ -1446,6 +1466,7 @@ class IfStmtNode extends StmtNode {
         Codegen.genPop(Codegen.T0);
         // Jump past myStmtList if the result is false
         Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel);
+        Codegen.generate("nop");
         myStmtList.codeGen();
         Codegen.genLabel(falseLabel);
     }
@@ -1559,9 +1580,11 @@ class IfElseStmtNode extends StmtNode {
         Codegen.genPop(Codegen.T0);
         // Jump to else statement list if the expression is false
         Codegen.generate("beq", Codegen.T0, Codegen.FALSE, elseLabel);
+        Codegen.generate("nop");
         myThenStmtList.codeGen();
         // Jump to end
         Codegen.generate("b", doneLabel);
+        Codegen.generate("nop");
         Codegen.genLabel(elseLabel);
         myElseStmtList.codeGen();
         Codegen.genLabel(doneLabel);
@@ -1835,6 +1858,7 @@ class ReturnStmtNode extends StmtNode {
         }
 
         Codegen.generate("j", ReturnLabelHolder.returnLabel);
+        Codegen.generate("nop");
     }
 
     // 1 kid
@@ -1953,21 +1977,24 @@ class StringLitNode extends ExpNode {
     public void codeGen() {
 
         // search in string hash table for the string
-        String stringLabel = StringLabelsHolder.labelsHashTable.get(myStrVal);
+        String stringLabel = StringDataHolder.labelsHashTable.get(myStrVal);
 
         // check if there's already a label for the specified string
         if (stringLabel == null) {
             // Allocate string
             stringLabel = Codegen.nextLabel();
-            StringLabelsHolder.labelsHashTable.put(myStrVal, stringLabel);
+            StringDataHolder.labelsHashTable.put(myStrVal, stringLabel);
 
-            Codegen.generate(".data");
-            Codegen.generateLabeled(stringLabel, ".asciiz ", "", myStrVal);
+            //Codegen.generate(".data");
+            PrintWriter mainPrintWriter = Codegen.p;
+            Codegen.p = new PrintWriter(StringDataHolder.StringsSection);
+            Codegen.generateLabeled(stringLabel, "\ndb ", "", myStrVal + ",0x0");
+            Codegen.p = mainPrintWriter;
         }
         
         // Push string address onto stack
 
-        Codegen.generate(".text");
+        //Codegen.generate(".text");
         Codegen.generate("la", Codegen.T0, stringLabel);
         Codegen.genPush(Codegen.T0);
 
@@ -2982,10 +3009,12 @@ class AndNode extends LogicalExpNode {
 
         // if LHS is false, we know the expression is false. Otherwise, jump to trueLabel.
         Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel);
+        Codegen.generate("nop");
         // Push false onto stack
         Codegen.generate("li", Codegen.T0, Codegen.FALSE);
         Codegen.genPush(Codegen.T0);
         Codegen.generate("b", doneLabel);
+        Codegen.generate("nop");
         Codegen.genLabel(trueLabel);
         // Expression result is that of the RHS, which is left on the stack.
         myExp2.codeGen();

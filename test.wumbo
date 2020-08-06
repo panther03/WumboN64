@@ -1,13 +1,28 @@
 int z;
 
-int f(int y)
-{
-    return y + 1;
+int fac(int n) {
+    if (n == 0) {
+        return 1;
+    } else {
+        return n*fac(n-1);
+    }
+}
+
+int g(){
+    return 5;
+}
+int a;
+int f(){
+    return g()*3;
 }
 
 int main(int x) {
-    x = 9; 
     z = 5;
-    cout << x;
-    cout << f(z);
+    cout << 1337;
+    cout << 69;
+    cout << "Hello!";
+    cout << f();
 }
+
+
+

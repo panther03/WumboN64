@@ -29,7 +29,7 @@ Start:
 
   ScreenNTSC(320, 240, BPP16, $A0100000) // Screen NTSC: 320x240, 16BPP, DRAM Origin = $A0100000
   //PrintStringOG($A0100000, 128, 32, FontBlack, Text, 11) // Print Text String To VRAM Using Font At X,Y Position
-  //PrintStringOG($A0100000, 192, 96, FontRed, Text, 11) // Print Text String To VRAM Using Font At X,Y Position
+  PrintStringOG($A0100000, 0, 0, FontBlack, Greeting, 17) // Print Text String To VRAM Using Font At X,Y Position
   
   j main
 
