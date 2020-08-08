@@ -804,14 +804,15 @@ class FnDeclNode extends DeclNode {
             if (myId.name().equals("main")) {
                 Codegen.generate("addiu", Codegen.FP, Codegen.SP, "0");
                 Codegen.generate("addiu", Codegen.SP, Codegen.FP, String.valueOf(-1 * ((FnSym)myId.sym()).paramsSizeBytes()));
-                Codegen.genPush(Codegen.R0); // Dummy
-                Codegen.genPush(Codegen.R0);
+                Codegen.generate("li", Codegen.T0, "0x4d41494e");
+                Codegen.genPush(Codegen.T0); // Dummy
+                Codegen.genPush(Codegen.T0);
             } else {
                 Codegen.genPush(Codegen.RA);
                 Codegen.genPush(Codegen.FP);
             }
                 Codegen.generate("addiu", Codegen.FP, Codegen.SP, String.valueOf(paramsBytes));
-                Codegen.generate("addiu", Codegen.SP, Codegen.SP, String.valueOf(-1 * localsBytes));
+                Codegen.generate("subiu", Codegen.SP, Codegen.SP, String.valueOf(localsBytes));
 
             // Call body codegen
             myBody.codeGen(((FnSym)myId.sym()).paramsSizeBytes(), myId.name().equals("main"));
@@ -1389,6 +1390,95 @@ class WriteStmtNode extends StmtNode {
     private ExpNode myExp;
 }
 
+class PrintStmtNode extends StmtNode {
+    public PrintStmtNode(ExpNode exp, boolean newline) {
+        myExp = exp;
+        myBgColor = 1;
+        myFgColor = 0;
+        hasNewline = newline;
+    }
+
+    public PrintStmtNode(ExpNode exp, int bgColor, int fgColor, boolean newline) {
+        myExp = exp;
+        myBgColor = bgColor;
+        myFgColor = fgColor;
+        hasNewline = newline;
+    }
+
+    public int getSize() {
+        return 0;
+    }
+
+    /**
+     * nameAnalysis
+     * Given a symbol table symTab, perform name analysis on this node's child
+     */
+    public void nameAnalysis(SymTable symTab) {
+        myExp.nameAnalysis(symTab);
+    }
+
+    /**
+     * typeCheck
+     */
+    public void typeCheck(Type retType) {
+        Type type = myExp.typeCheck();
+
+        if (type.isFnType()) {
+            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
+                         "Attempt to print a function");
+        }
+
+        if (type.isStructDefType()) {
+            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
+                         "Attempt to print a struct name");
+        }
+
+        if (type.isStructType()) {
+            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
+                         "Attempt to print a struct variable");
+        }
+
+        if (type.isVoidType()) {
+            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
+                         "Attempt to print void");
+        }
+    }
+
+    public void unparse(PrintWriter p, int indent) {
+        addIndentation(p, indent);
+        p.print("PrintLn(");
+        myExp.unparse(p, 0);
+        p.print(")");
+        p.println(";");
+    }
+
+    /* CODEGEN */
+    public void codeGen() {
+        this.genSrcComment();
+
+        // Compute expression result and pop into A0
+        myExp.codeGen();
+
+        // Check if the expression is a string. The only way it can be is if it is a literal, so we check if it's StringLitNode
+        if (myExp instanceof StringLitNode) {
+            Codegen.genPop(Codegen.A2);
+            //int length = ((StringLitNode)myExp).strVal().length() <= 2 ? 0 : ((StringLitNode)myExp).strVal().length() -1;
+            System.out.println(((StringLitNode)myExp).strVal());
+            Codegen.generate(String.format("PrintString(%s, %d, %d, FontBlack, %d, %d)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY,myBgColor, myFgColor));
+        } else {
+            Codegen.genPop(Codegen.T0);
+            Codegen.generate(String.format("PrintInt(%s, %d, %d, FontBlack, %d, %d, t0)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY, myBgColor, myFgColor));
+        }
+        N64ScreenData.ScreenY += 16;
+    }
+
+    // 1 kid
+    private ExpNode myExp;
+    private int myBgColor;
+    private int myFgColor;
+    private boolean hasNewline;
+}
+
 class IfStmtNode extends StmtNode {
     public IfStmtNode(ExpNode exp, DeclListNode dlist, StmtListNode slist) {
         myDeclList = dlist;
@@ -1675,9 +1765,11 @@ class WhileStmtNode extends StmtNode {
         Codegen.genPop(Codegen.T0);
         // Jump past loop if expression is false
         Codegen.generate("beq", Codegen.T0, Codegen.FALSE, doneLabel);
+        Codegen.generate("nop");
         myStmtList.codeGen();
         // Loop back to start
         Codegen.generate("b", loopLabel);
+        Codegen.generate("nop");
         Codegen.genLabel(doneLabel);
     }
 
@@ -2999,7 +3091,7 @@ class AndNode extends LogicalExpNode {
     }
 
     public void codeGen() {
-        Codegen.generate("# AndNode start");
+        Codegen.generate("// AndNode start");
 
         String trueLabel = "TrueLab_" + Codegen.nextLabel();
         String doneLabel = "DoneLab_" + Codegen.nextLabel();
@@ -3008,7 +3100,8 @@ class AndNode extends LogicalExpNode {
         Codegen.genPop(Codegen.T0);
 
         // if LHS is false, we know the expression is false. Otherwise, jump to trueLabel.
-        Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel);
+        Codegen.generate("li", Codegen.T1, Codegen.TRUE);
+        Codegen.generate("beq", Codegen.T0, Codegen.T1, trueLabel);
         Codegen.generate("nop");
         // Push false onto stack
         Codegen.generate("li", Codegen.T0, Codegen.FALSE);
@@ -3020,7 +3113,7 @@ class AndNode extends LogicalExpNode {
         myExp2.codeGen();
         Codegen.genLabel(doneLabel);
 
-        Codegen.generate("# AndNode end");
+        Codegen.generate("// AndNode end");
     }
 
 }
@@ -3040,7 +3133,7 @@ class OrNode extends LogicalExpNode {
 
     /* CODEGEN */
     public void codeGen() {
-        Codegen.generate("# OrNode start");
+        Codegen.generate("// OrNode start");
 
         String falseLabel = "FalseLab_" + Codegen.nextLabel();
         String doneLabel = "DoneLab_" + Codegen.nextLabel();
@@ -3050,17 +3143,20 @@ class OrNode extends LogicalExpNode {
         Codegen.genPop(Codegen.T0);
 
         // if LHS is true, we know the expression is true. Otherwise, jump to falseLabel.
-        Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel);
+        Codegen.generate("li", Codegen.T1, Codegen.FALSE);
+        Codegen.generate("beq", Codegen.T0, Codegen.T1, falseLabel);
+        Codegen.generate("nop");
         // Push true onto stack
         Codegen.generate("li", Codegen.T0, Codegen.TRUE);
         Codegen.genPush(Codegen.T0);
         Codegen.generate("b", doneLabel);
+        Codegen.generate("nop");
         Codegen.genLabel(falseLabel);
         // Expression result is that of the RHS, which is left on the stack.
         myExp2.codeGen();
         Codegen.genLabel(doneLabel);
 
-        Codegen.generate("# OrNode end");
+        Codegen.generate("// OrNode end");
     }
 
 }

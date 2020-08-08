@@ -1,28 +1,34 @@
-int z;
+bool p;
+bool q;
+int c;
 
-int fac(int n) {
-    if (n == 0) {
-        return 1;
-    } else {
-        return n*fac(n-1);
+void print_c() {
+   PrintLn(c + 1);
+}
+
+int main() {
+  int a;
+
+  a = 2;
+
+  if(true) {
+    int b;
+    b = 6;
+    while (b >= 0) {
+        a = c = 3 + a;
+        b--;
     }
+    PrintLn(b);
+  }
+  print_c();
+  PrintLn(a);
+
+  p = q = true;
+
+
+  PrintLn((p || q));
+  PrintLn(!(a != c));
+  PrintLn(true && true);
+
+  return c;
 }
-
-int g(){
-    return 5;
-}
-int a;
-int f(){
-    return g()*3;
-}
-
-int main(int x) {
-    z = 5;
-    cout << 1337;
-    cout << 69;
-    cout << "Hello!";
-    cout << f();
-}
-
-
-

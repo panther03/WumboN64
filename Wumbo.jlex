@@ -1,4 +1,6 @@
 import java_cup.runtime.*; // defines the Symbol class
+import java.util.HashMap;
+import java.util.Map;
 
 // The generated scanner will return a Symbol for each token that it finds.
 // A Symbol contains an Object field named value; that field will be of type
@@ -46,6 +48,42 @@ class StrLitTokenVal extends TokenVal {
     StrLitTokenVal(int line, int ch, String val) {
         super(line, ch);
         strVal = val;
+    }
+}
+
+class ColorValues {
+  public static HashMap<String, Integer> ColorValueTable = new HashMap<String, Integer>() {
+    {
+      put("White", 0);
+      put("Black", 1);
+      put("Blue", 2);
+      put("Green", 3);
+      put("Cyan", 4);
+      put("Red", 5);
+      put("Magenta", 6);
+      put("Orange", 7);
+      put("LightGray", 8);
+      put("Gray", 9);
+      put("Purple", 10);
+      put("Indigo", 11);
+      put("Yellow", 12);
+      put("Brown", 13);
+      put("Lime", 14);
+      put("Slate", 15);
+      put("Pink", 16);
+    }
+  };
+}
+
+class ColorTokenVal extends TokenVal {
+    int colorVal;
+    ColorTokenVal(int line, int ch, String colorString) {
+        super(line, ch);
+        try {
+          colorVal = ColorValues.ColorValueTable.get(colorString);
+        } catch (Exception e) {
+          colorVal = 0;
+        }
     }
 }
 
@@ -141,6 +179,20 @@ return new Symbol(sym.EOF);
             return S;
           }
 
+"PrintLn" { Symbol S = new Symbol(sym.PRINTLN, new TokenVal(yyline+1, CharNum.num));
+            CharNum.num += yytext().length();
+            return S;
+          }
+        
+"White"|"Black"|"Blue"|"Green"|"Cyan"|"Red"|"Magenta"|"Orange"|"LightGray"|"Gray"|"Purple"|"Indigo"|"Yellow"|"Brown"|"Lime"|"Slate"|"Pink" {
+            System.out.println("AAAA!!!!!");
+            ErrMsg.warn(yyline+1, CharNum.num,"brrburhrubhrubhrbhrb");
+            Symbol S = new Symbol(sym.FONTCOLOR,
+                              new ColorTokenVal(yyline+1, CharNum.num, yytext()));
+            CharNum.num += yytext().length();
+            return S;
+          }
+
 ({LETTER}|"_")({LETTER}|{DIGIT}|"_")* {
             Symbol S = new Symbol(sym.ID,
                              new IdTokenVal(yyline+1, CharNum.num, yytext()));
@@ -162,7 +214,6 @@ return new Symbol(sym.EOF);
             CharNum.num += yytext().length();
             return S;
           }
-
 
 \"({NOTNEWLINEORQUOTEORESCAPE}|\\{ESCAPEDCHAR})*\" {
             String strVal = yytext();

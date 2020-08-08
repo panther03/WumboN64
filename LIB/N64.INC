@@ -64,7 +64,7 @@ constant k0(26)
 constant k1(27)
 constant gp(28)
 constant sp(29)
-constant s8(30)
+constant fp(30)
 constant ra(31)
 
 // N64 MIPS 4300 CP1 Floating Point Unit (FPU) Registers (COP1)

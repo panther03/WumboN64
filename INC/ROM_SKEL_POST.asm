@@ -1,6 +1,25 @@
 Greeting:
   db "Welcome to Wumbo!"
 
+align(4)
+FontColors:
+  dh 0xFFFE
+  dh 0x0000
+  dh 0x0032
+  dh 0x0400
+  dh 0x07FF
+  dh 0xF800
+  dh 0xF8A4
+  dh 0xFD00
+  dh 0xD6B4
+  dh 0x8420
+  dh 0x8020
+  dh 0x4820
+  dh 0xFFC0
+  dh 0xA14A
+  dh 0x07C0
+  dh 0x7B7A
+  dh 0xFE32
+
 align(4) // Align 32-Bit
 insert FontBlack, "INC/FontBlack8x8.bin"
-insert FontRed, "INC/FontRed8x8.bin"

@@ -1,0 +1,30 @@
+int z;
+
+int fac(int n) {
+    if (n == 0) {
+        return 1;
+    } else {
+        return n*fac(n-1);
+    }
+}
+
+int g(){
+    return 5;
+}
+int a;
+int f(){
+    return g()*3;
+}
+
+int main(int x) {
+    z = 5;
+    PrintLn("Hello Wumbo!", Red, Black);
+    PrintLn("Hello Wumbo!", Orange, Black);
+    PrintLn("Hello Wumbo!", Yellow, Black);
+    PrintLn("Hello Wumbo!", Lime, Black);
+    PrintLn("Hello Wumbo!", Cyan, Black);
+    PrintLn("Hello Wumbo!", Blue, Black);
+    PrintLn("Hello Wumbo!", Indigo, Black);
+    PrintLn("Hello Wumbo!", Purple, Black);
+    PrintLn("Hello Wumbo!", Magenta, Black);
+}

@@ -41,6 +41,7 @@ terminal                RETURN;
 terminal IdTokenVal     ID;
 terminal IntLitTokenVal INTLITERAL;
 terminal StrLitTokenVal STRINGLITERAL;
+terminal ColorTokenVal  FONTCOLOR;
 terminal                LCURLY;
 terminal                RCURLY;
 terminal                LPAREN;
@@ -50,6 +51,7 @@ terminal                COMMA;
 terminal                DOT;
 terminal                WRITE;
 terminal                READ;
+terminal                PRINTLN;
 terminal                PLUSPLUS;
 terminal                MINUSMINUS;
 terminal                PLUS;
@@ -223,8 +225,11 @@ stmt            ::= assignExp:ae SEMICOLON
                 | CIN READ loc:lc SEMICOLON
                 {: RESULT = new ReadStmtNode(lc);
                 :}
-                | COUT WRITE exp:e SEMICOLON
-                {: RESULT = new WriteStmtNode(e);
+                | PRINTLN LPAREN exp:e COMMA FONTCOLOR:fc1 COMMA FONTCOLOR:fc2 RPAREN SEMICOLON
+                {: RESULT = new PrintStmtNode(e, fc1.colorVal, fc2.colorVal, true);
+                :}
+                | PRINTLN LPAREN exp:e RPAREN SEMICOLON
+                {: RESULT = new PrintStmtNode(e, true);
                 :}
                 | IF LPAREN exp:e RPAREN LCURLY varDeclList:vdl stmtList:sl RCURLY
                 {: RESULT = new IfStmtNode(e,
