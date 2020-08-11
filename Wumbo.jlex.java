@@ -827,8 +827,6 @@ return new Symbol(sym.EOF);
 						break;
 					case 39:
 						{
-            System.out.println("AAAA!!!!!");
-            ErrMsg.warn(yyline+1, CharNum.num,"brrburhrubhrubhrbhrb");
             Symbol S = new Symbol(sym.FONTCOLOR,
                               new ColorTokenVal(yyline+1, CharNum.num, yytext()));
             CharNum.num += yytext().length();

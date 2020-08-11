@@ -1381,7 +1381,7 @@ class WriteStmtNode extends StmtNode {
             Codegen.generate(String.format("PrintString(%s, %d, %d, FontBlack)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY));
         } else {
             Codegen.genPop(Codegen.T0);
-            Codegen.generate(String.format("PrintInt(%s, %d, %d, FontRed, t0)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY));
+            Codegen.generate(String.format("PrintInt(%s, CURR_SCREEN_X, CURR_SCREEN_Y, FontBlack, t0)",N64ScreenData.FontAddr));
         }
         N64ScreenData.ScreenY += 16;
     }
@@ -1464,10 +1464,10 @@ class PrintStmtNode extends StmtNode {
             Codegen.genPop(Codegen.A2);
             //int length = ((StringLitNode)myExp).strVal().length() <= 2 ? 0 : ((StringLitNode)myExp).strVal().length() -1;
             System.out.println(((StringLitNode)myExp).strVal());
-            Codegen.generate(String.format("PrintString(%s, %d, %d, FontBlack, %d, %d)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY,myBgColor, myFgColor));
+            Codegen.generate(String.format("PrintString(%s, CURR_SCREEN_X, CURR_SCREEN_Y, FontBlack, %d, %d)",N64ScreenData.FontAddr,myBgColor, myFgColor));
         } else {
             Codegen.genPop(Codegen.T0);
-            Codegen.generate(String.format("PrintInt(%s, %d, %d, FontBlack, %d, %d, t0)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY, myBgColor, myFgColor));
+            Codegen.generate(String.format("PrintInt(%s, CURR_SCREEN_X, CURR_SCREEN_Y, FontBlack, %d, %d, t0)",N64ScreenData.FontAddr, myBgColor, myFgColor));
         }
         N64ScreenData.ScreenY += 16;
     }

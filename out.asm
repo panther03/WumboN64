@@ -21,6 +21,7 @@ base $80000000 // Entry Point Of Code
 include "LIB/N64.INC" // Include N64 Definitions
 include "LIB/N64_HEADER.ASM" // Include 64 Byte Header & Vector Table
 insert "LIB/N64_BOOTCODE.BIN" // Include 4032 Byte Boot Code
+include "LIB/N64_INPUT.INC" // Include N64 Definitions
 include "INC/LIBWUMBO.INC" // Include Wumbo Helper Routines
 
 Start:
@@ -28,137 +29,40 @@ Start:
   N64_INIT() // Run N64 Initialisation Routine
 
   ScreenNTSC(320, 240, BPP16, $A0100000) // Screen NTSC: 320x240, 16BPP, DRAM Origin = $A0100000
-  //PrintStringOG($A0100000, 128, 32, FontBlack, Text, 11) // Print Text String To VRAM Using Font At X,Y Position
+  InitController(PIF1) 
+
   PrintStringOG($A0100000, 0, 0, FontBlack, Greeting, 17) // Print Text String To VRAM Using Font At X,Y Position
   
   j main
 
 	align(2)
-_p:	
+_y:	
 dw 0x00000000	// reserve 4 bytes
 	align(2)
-_q:	
+_a:	
 dw 0x00000000	// reserve 4 bytes
-	align(2)
-_c:	
-dw 0x00000000	// reserve 4 bytes
-	_print_c:
+	_f:
 	sw    r31, 0(sp)	//PUSH
 	addiu sp, sp, -4
 	sw    r30, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	addiu r30, sp, 8
+	addiu r30, sp, 12
 	subiu sp, sp, 0
-	
-// PrintLn((c(int) + 1));
-
-	la    a1, _c
-	lw    t0, 0(a1)
+	lw    t0, 0(r30)
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	li    t0, 1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	add   t0, t0, t1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	PrintInt($A0100000, 0, 16, FontBlack, 1, 0, t0)
-_L0:
-	lw    r31, 0(r30)
-	move  t0, r30
-	lw    r30, -4(r30)
-	move  sp, t0
-	jr    r31
-	nop
-main:
-	addiu r30, sp, 0
-	addiu sp, r30, 0
-	li    t0, 0x4d41494e
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	addiu r30, sp, 8
-	subiu sp, sp, 8
-	
-// a(int) = 2;
-
 	li    t0, 2
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	li    t0, 0
-	addiu t0, r30, -8
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	sw    t0, 0(t1)	//ASSIGN
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	
-// if (true)
-
-	li    t0, 1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	beq   t0, 0, FalseLab__L2
-	nop
-	
-// b(int) = 6;
-
-	li    t0, 6
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	li    t0, 0
-	addiu t0, r30, -12
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	sw    t0, 0(t1)	//ASSIGN
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-LoopLab__L3:
-	lw    t0, -12(r30)
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	li    t0, 0
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sge   t0, t0, t1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	beq   t0, 0, DoneLab__L4
-	nop
-	
-// a(int) = (c(int) = (3 + a(int)));
-
 	li    t0, 3
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	lw    t0, -8(r30)
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	mult  t0, t1
+	mflo  t0
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
 	lw    t1, 4(sp)	//POP
@@ -168,198 +72,181 @@ LoopLab__L3:
 	add   t0, t0, t1
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	la    t0, _c
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	sw    t0, 0(t1)	//ASSIGN
-	li    t0, 0
-	addiu t0, r30, -8
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	sw    t0, 0(t1)	//ASSIGN
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	
-// b(int)--;
-
-	lw    t0, -12(r30)
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	li    t0, 0
-	addiu t0, r30, -12
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	addiu t0, t0, -1
-	sw    t0, 0(t1)	//DECREMENT
-	b     LoopLab__L3
-	nop
-DoneLab__L4:
-	
-// PrintLn(b(int));
-
-	lw    t0, -12(r30)
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	PrintInt($A0100000, 0, 32, FontBlack, 1, 0, t0)
-FalseLab__L2:
-	jal   _print_c
-	nop
-	sw    v0, 0(sp)	//PUSH
-	addiu sp, sp, -4
 	lw    v0, 4(sp)	//POP
 	addiu sp, sp, 4
-	
-// PrintLn(a(int));
-
-	lw    t0, -8(r30)
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	PrintInt($A0100000, 0, 48, FontBlack, 1, 0, t0)
-	
-// p(bool) = (q(bool) = true);
-
-	li    t0, 1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	la    t0, _q
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	sw    t0, 0(t1)	//ASSIGN
-	la    t0, _p
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	sw    t0, 0(t1)	//ASSIGN
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	
-// PrintLn((p(bool) || q(bool)));
-
-	// OrNode start
-	la    a1, _p
-	lw    t0, 0(a1)
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	li    t1, 0
-	beq   t0, t1, FalseLab__L5
+	j     _L0
 	nop
-	li    t0, 1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	b     DoneLab__L6
+_L0:
+	lw    r31, -4(r30)
+	move  t0, r30
+	lw    r30, -8(r30)
+	move  sp, t0
+	jr    r31
 	nop
-FalseLab__L5:
-	la    a1, _q
-	lw    t0, 0(a1)
-	sw    t0, 0(sp)	//PUSH
+	_fac:
+	sw    r31, 0(sp)	//PUSH
 	addiu sp, sp, -4
-DoneLab__L6:
-	// OrNode end
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	PrintInt($A0100000, 0, 64, FontBlack, 1, 0, t0)
+	sw    r30, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	addiu r30, sp, 12
+	subiu sp, sp, 0
 	
-// PrintLn((!(a(int) != c(int))));
+// if ((n(int) == 0))
 
-	lw    t0, -8(r30)
+	lw    t0, 0(r30)
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	la    a1, _c
-	lw    t0, 0(a1)
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t1, 4(sp)	//POP
-	addiu sp, sp, 4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	sne   t0, t0, t1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	seq   t0, t0, 0
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	PrintInt($A0100000, 0, 80, FontBlack, 1, 0, t0)
-	
-// PrintLn((true && true));
-
-	// AndNode start
-	li    t0, 1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-	lw    t0, 4(sp)	//POP
-	addiu sp, sp, 4
-	li    t1, 1
-	beq   t0, t1, TrueLab__L7
-	nop
 	li    t0, 0
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	b     DoneLab__L8
-	nop
-TrueLab__L7:
-	li    t0, 1
-	sw    t0, 0(sp)	//PUSH
-	addiu sp, sp, -4
-DoneLab__L8:
-	// AndNode end
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
 	lw    t0, 4(sp)	//POP
 	addiu sp, sp, 4
-	PrintInt($A0100000, 0, 96, FontBlack, 1, 0, t0)
-	la    a1, _c
-	lw    t0, 0(a1)
+	seq   t0, t0, t1
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	beq   t0, 0, ElseLab__L2
+	nop
+	li    t0, 1
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
 	lw    v0, 4(sp)	//POP
 	addiu sp, sp, 4
 	j     _L1
 	nop
+	b     DoneLab__L3
+	nop
+ElseLab__L2:
+	lw    t0, 0(r30)
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t0, 0(r30)
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	li    t0, 1
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	sub   t0, t0, t1
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	jal   _fac
+	nop
+	sw    v0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	mult  t0, t1
+	mflo  t0
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    v0, 4(sp)	//POP
+	addiu sp, sp, 4
+	j     _L1
+	nop
+DoneLab__L3:
 _L1:
-	lw    r31, 0(r30)
+	lw    r31, -4(r30)
 	move  t0, r30
-	lw    r30, -4(r30)
+	lw    r30, -8(r30)
+	move  sp, t0
+	jr    r31
+	nop
+main:
+	addiu r30, sp, 0
+	addiu sp, r30, -4
+	li    t0, 0x4d41494e
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	addiu r30, sp, 12
+	subiu sp, sp, 4
+	
+// n(int) = 1;
+
+	li    t0, 1
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	li    t0, 0
+	addiu t0, r30, -12
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	sw    t0, 0(t1)	//ASSIGN
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+LoopLab__L5:
+	lw    t0, -12(r30)
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	li    t0, 20
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	slt   t0, t0, t1
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	beq   t0, 0, DoneLab__L6
+	nop
+	
+// PrintLn(1);
+
+	li    t0, 1
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	PrintInt($A0100000, CURR_SCREEN_X, CURR_SCREEN_Y, FontBlack, 11, 5, t0)
+	
+// n(int)++;
+
+	lw    t0, -12(r30)
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	li    t0, 0
+	addiu t0, r30, -12
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	addiu t0, t0, 1
+	sw    t0, 0(t1)	//INCREMENT
+	b     LoopLab__L5
+	nop
+DoneLab__L6:
+_L4:
+	lw    r31, -4(r30)
+	move  t0, r30
+	lw    r30, -8(r30)
 	move  sp, t0
 	Loop:
 	j Loop
 	nop
 Greeting:
-  db "Welcome to Wumbo!"
+  db "Welcome to Wumbo!",0x0
+ContinueMsg:
+  db "Press A to continue output.."
 
 align(4)
 FontColors:
@@ -380,6 +267,26 @@ FontColors:
   dh 0x07C0
   dh 0x7B7A
   dh 0xFE32
+
+align(4)
+CURR_SCREEN_X:
+  dw 0x00000000
+CURR_SCREEN_Y:
+  dw 0x00000010
+
+align(8)
+PIF1:
+  dw $FF010401,0
+  dw 0,0
+  dw 0,0
+  dw 0,0
+  dw $FE000000,0
+  dw 0,0
+  dw 0,0
+  dw 0,1
+
+PIF2:
+  fill 64 // Generate 64 Bytes Containing $00
 
 align(4) // Align 32-Bit
 insert FontBlack, "INC/FontBlack8x8.bin"

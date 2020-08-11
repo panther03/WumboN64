@@ -185,8 +185,6 @@ return new Symbol(sym.EOF);
           }
         
 "White"|"Black"|"Blue"|"Green"|"Cyan"|"Red"|"Magenta"|"Orange"|"LightGray"|"Gray"|"Purple"|"Indigo"|"Yellow"|"Brown"|"Lime"|"Slate"|"Pink" {
-            System.out.println("AAAA!!!!!");
-            ErrMsg.warn(yyline+1, CharNum.num,"brrburhrubhrubhrbhrb");
             Symbol S = new Symbol(sym.FONTCOLOR,
                               new ColorTokenVal(yyline+1, CharNum.num, yytext()));
             CharNum.num += yytext().length();
