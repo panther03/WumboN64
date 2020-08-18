@@ -193,7 +193,7 @@ LoopLab__L5:
 	lw    t0, -12(r30)
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
-	li    t0, 20
+	li    t0, 40
 	sw    t0, 0(sp)	//PUSH
 	addiu sp, sp, -4
 	lw    t1, 4(sp)	//POP
@@ -208,6 +208,38 @@ LoopLab__L5:
 	beq   t0, 0, DoneLab__L6
 	nop
 	
+// if ((n(int) > 20))
+
+	lw    t0, -12(r30)
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	li    t0, 20
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t1, 4(sp)	//POP
+	addiu sp, sp, 4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	sgt   t0, t0, t1
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	beq   t0, 0, ElseLab__L7
+	nop
+	
+// PrintLn(5);
+
+	li    t0, 5
+	sw    t0, 0(sp)	//PUSH
+	addiu sp, sp, -4
+	lw    t0, 4(sp)	//POP
+	addiu sp, sp, 4
+	PrintInt($A0100000, CURR_SCREEN_X, CURR_SCREEN_Y, FontBlack, 3, 10, t0)
+	b     DoneLab__L8
+	nop
+ElseLab__L7:
+	
 // PrintLn(1);
 
 	li    t0, 1
@@ -216,6 +248,7 @@ LoopLab__L5:
 	lw    t0, 4(sp)	//POP
 	addiu sp, sp, 4
 	PrintInt($A0100000, CURR_SCREEN_X, CURR_SCREEN_Y, FontBlack, 11, 5, t0)
+DoneLab__L8:
 	
 // n(int)++;
 

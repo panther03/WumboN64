@@ -20,14 +20,21 @@ macro ClearScrn() {
 
 macro WaitForContinue(ypos_addr) {
   PrintStringOG($A0100000, 0, 224, FontBlack, ContinueMsg, 28) // Print Text String To VRAM Using Font At X,Y Position
+  li a0, $BFC007C4
+  sw r0,0(a0)
+  li t3,0
   {#}InpLoop:
-    nop
-    nop
-    nop
-    nop
-    ReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog Y
+    lui a1, SI_BASE
+    bnez t3, {#}BtnReleased
+    lui a0, PIF_BASE
+    ReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog YReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog Y
     andi t3,t0,JOY_A
-    beqz t3,{#}InpLoop
+    j {#}InpLoop
+    nop
+    {#}BtnReleased:
+    ReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog YReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog Y
+    andi t3,t0,JOY_A
+    bnez t3,{#}InpLoop
     nop
   ClearScrn()
   la a0, {ypos_addr}
@@ -36,11 +43,15 @@ macro WaitForContinue(ypos_addr) {
 }
 
 macro PrintInt(vram, xpos, ypos, fontfile, fontbg, fontfg, int) {
+  nop
+  nop
+  nop
+  nop
   la a0, {ypos}
   li t1, 0xE0
   move t2, r0
   lw t2, 0(a0)
-  bne t2, t1, {#}SkipClrScreen
+  blt t2, t1, {#}SkipClrScreen
   nop
     STACK_PUSH(t0)
     WaitForContinue({ypos})

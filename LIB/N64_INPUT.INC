@@ -26,8 +26,6 @@ macro InitController(PIF) {
 }
 
 macro ReadController(PIF) {
-  lui a0,PIF_BASE // A0 = PIF Base Register ($BFC00000)
-  lui a1,SI_BASE // A1 = SI Base Register ($A4800000)
   la a2,{PIF} // A2 = PIF2 Offset
   sw a2,SI_DRAM_ADDR(a1) // Store PIF2 To SI_DRAM_ADDR ($A4800000)
   ori a2,a0,PIF_RAM // A2 = PIF_RAM: JoyChannel ($BFC007C0)
