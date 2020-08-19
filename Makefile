@@ -52,9 +52,9 @@ EmptySymTableException.class: EmptySymTableException.java
 	$(JC) -g -cp $(CP) EmptySymTableException.java
 
 ###
-# test
+# cmpl
 #
-test:
+cmpl:
 	java -cp $(CP) P6 test.wumbo temp.asm
 	cat INC/ROM_SKEL.asm temp.asm | cat - INC/ROM_SKEL_POST.asm > out.asm
 	rm temp.asm
@@ -62,10 +62,26 @@ test:
 ### 
 # rom
 # 
-rom: test
+rom: cmpl
+
+ifeq ($(WUMBO_TOOLS),SYSTEM)
 	bass out.asm
 	chksum64 out.N64
+else
+	tools/bass out.asm
+	tools/chksum64 out.N64
+endif
 	
+###
+# play
+#
+play:
+
+ifeq ($(WUMBO_DEBUG),YES)
+	mame n64 -window -cart out.N64 -switchres -nofilter -debug
+else
+	mame n64 -window -cart out.N64 -switchres -nofilter
+endif
 
 ###
 # clean
@@ -73,6 +89,6 @@ rom: test
 clean:
 	rm -f *~ *.class parser.java Wumbo.jlex.java sym.java
 
-cleantest:
+cleanrom:
 	rm -f out.asm
 	rm -f out.N64

@@ -25,14 +25,14 @@ macro WaitForContinue(ypos_addr) {
   li t3,0
   {#}InpLoop:
     lui a1, SI_BASE
-    bnez t3, {#}BtnReleased
     lui a0, PIF_BASE
     ReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog YReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog Y
+    bnez t3, {#}BtnReleased    
+    nop
     andi t3,t0,JOY_A
     j {#}InpLoop
     nop
     {#}BtnReleased:
-    ReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog YReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog Y
     andi t3,t0,JOY_A
     bnez t3,{#}InpLoop
     nop
@@ -40,6 +40,38 @@ macro WaitForContinue(ypos_addr) {
   la a0, {ypos_addr}
   sw r0, 0(a0)
   move t2, r0
+}
+
+macro ReadInput() {
+  nop
+  nop
+  nop
+  nop
+  li v0,0
+  li t3,0
+  li t4,0
+  {#}InpLoop:
+    lui a1, SI_BASE
+    lui a0, PIF_BASE
+    ReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog YReadController(PIF2) // T0 = Controller Buttons, T1 = Analog X, T2 = Analog Y
+    bnez t3, {#}BtnAReleased   
+    nop 
+    bnez t4, {#}BtnBReleased
+    nop
+    andi t3,t0,JOY_A
+    andi t4,t0,JOY_B
+    j {#}InpLoop
+    nop
+    {#}BtnAReleased:
+    andi t3,t0,JOY_A
+    bnez t3,{#}InpLoop
+    nop
+    addiu v0, v0, 1
+    j {#}InpLoop
+    {#}BtnBReleased:
+    andi t4,t0,JOY_B
+    bnez t4,{#}InpLoop
+    nop
 }
 
 macro PrintInt(vram, xpos, ypos, fontfile, fontbg, fontfg, int) {

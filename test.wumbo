@@ -17,13 +17,15 @@ int fac(int n) {
 int main (int x) {
     int n;
     n = 1;   
-    while (n < 40) {
-        if (n > 20) {
-            PrintLn(5, Green, Purple);
-        } else {
-            PrintLn(1, Indigo, Red);
-        }
-        
-        n++;
-    }
+    //while (n < 40) {
+    //    if (n > 20) {
+    //        PrintLn(5, Green, Purple);
+    //    } else {
+    //        PrintLn(1, Indigo, Red);
+    //    }
+    //    
+    //    n++;
+    //}
+    cin >> n; 
+    PrintLn(n);
 }

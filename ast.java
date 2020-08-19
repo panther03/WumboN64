@@ -1301,11 +1301,12 @@ class ReadStmtNode extends StmtNode {
         ErrMsg.fatal(0, 0, "ReadStmtNode unimplemented");
 
         // Get the address of the destination ID
-        /*myExp.genAddr();
+        myExp.genAddr();
         
         // Perform read operation
-        Codegen.generate("li", Codegen.V0, "5");
-        Codegen.generate("syscall");
+        //Codegen.generate("li", Codegen.V0, "5");
+        //Codegen.generate("syscall");
+        Codegen.generate("ReadInput()");
         
         Codegen.genPop(Codegen.T0); // load address into T0
         Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0, "READ"); // store result from syscall at T0*/
@@ -2305,7 +2306,6 @@ class IdNode extends ExpNode {
                 // same as param
             case PARAM:
                 // Load address into T0 based on an offset from FP
-                Codegen.generate("li", Codegen.T0, Codegen.FALSE);
                 Codegen.generate("addiu", Codegen.T0, Codegen.FP, Integer.toString(mySym.offset));
                 break;
             case GLOBAL:
