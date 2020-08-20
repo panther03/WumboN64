@@ -31,8 +31,6 @@ terminal                VOID;
 terminal TokenVal       TRUE;
 terminal TokenVal       FALSE;
 terminal                STRUCT;
-terminal                CIN;
-terminal                COUT;
 terminal                IF;
 terminal                ELSE;
 terminal                WHILE;
@@ -49,9 +47,8 @@ terminal                RPAREN;
 terminal                SEMICOLON;
 terminal                COMMA;
 terminal                DOT;
-terminal                WRITE;
-terminal                READ;
 terminal                PRINTLN;
+terminal                SCAN;
 terminal                PLUSPLUS;
 terminal                MINUSMINUS;
 terminal                PLUS;
@@ -222,8 +219,8 @@ stmt            ::= assignExp:ae SEMICOLON
                 | loc:lc MINUSMINUS SEMICOLON
                 {: RESULT = new PostDecStmtNode(lc);
                 :}
-                | CIN READ loc:lc SEMICOLON
-                {: RESULT = new ReadStmtNode(lc);
+                | SCAN LPAREN loc:lc RPAREN SEMICOLON
+                {: RESULT = new ScanStmtNode(lc);
                 :}
                 | PRINTLN LPAREN exp:e COMMA FONTCOLOR:fc1 COMMA FONTCOLOR:fc2 RPAREN SEMICOLON
                 {: RESULT = new PrintStmtNode(e, fc1.colorVal, fc2.colorVal, true);

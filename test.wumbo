@@ -26,6 +26,6 @@ int main (int x) {
     //    
     //    n++;
     //}
-    cin >> n; 
+    Scan(n); 
     PrintLn(n);
 }

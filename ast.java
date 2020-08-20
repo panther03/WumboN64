@@ -43,7 +43,7 @@ import java.util.*;
 //       PostIncStmtNode     ExpNode
 //       PostDecStmtNode     ExpNode
 //       ReadStmtNode        ExpNode
-//       WriteStmtNode       ExpNode
+//       PrintStmtNode       ExpNode
 //       IfStmtNode          ExpNode, DeclListNode, StmtListNode
 //       IfElseStmtNode      ExpNode, DeclListNode, StmtListNode,
 //                                    DeclListNode, StmtListNode
@@ -1248,8 +1248,8 @@ class PostDecStmtNode extends StmtNode {
     private ExpNode myExp;
 }
 
-class ReadStmtNode extends StmtNode {
-    public ReadStmtNode(ExpNode e) {
+class ScanStmtNode extends StmtNode {
+    public ScanStmtNode (ExpNode e) {
         myExp = e;
     }
 
@@ -1273,32 +1273,31 @@ class ReadStmtNode extends StmtNode {
 
         if (type.isFnType()) {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
-                         "Attempt to read a function");
+                         "Attempt to scan a function");
         }
 
         if (type.isStructDefType()) {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
-                         "Attempt to read a struct name");
+                         "Attempt to scan a struct name");
         }
 
         if (type.isStructType()) {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
-                         "Attempt to read a struct variable");
+                         "Attempt to scan a struct variable");
         }
     }
 
     public void unparse(PrintWriter p, int indent) {
         addIndentation(p, indent);
-        p.print("cin >> ");
+        p.print("Scan(");
         myExp.unparse(p, 0);
+        p.print(")");
         p.println(";");
     }
 
     /* CODEGEN */
     public void codeGen() {
         this.genSrcComment();
-
-        ErrMsg.fatal(0, 0, "ReadStmtNode unimplemented");
 
         // Get the address of the destination ID
         myExp.genAddr();
@@ -1313,81 +1312,6 @@ class ReadStmtNode extends StmtNode {
     }
 
     // 1 kid (actually can only be an IdNode or an ArrayExpNode)
-    private ExpNode myExp;
-}
-
-class WriteStmtNode extends StmtNode {
-    public WriteStmtNode(ExpNode exp) {
-        myExp = exp;
-    }
-
-    public int getSize() {
-        return 0;
-    }
-
-    /**
-     * nameAnalysis
-     * Given a symbol table symTab, perform name analysis on this node's child
-     */
-    public void nameAnalysis(SymTable symTab) {
-        myExp.nameAnalysis(symTab);
-    }
-
-    /**
-     * typeCheck
-     */
-    public void typeCheck(Type retType) {
-        Type type = myExp.typeCheck();
-
-        if (type.isFnType()) {
-            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
-                         "Attempt to write a function");
-        }
-
-        if (type.isStructDefType()) {
-            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
-                         "Attempt to write a struct name");
-        }
-
-        if (type.isStructType()) {
-            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
-                         "Attempt to write a struct variable");
-        }
-
-        if (type.isVoidType()) {
-            ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
-                         "Attempt to write void");
-        }
-    }
-
-    public void unparse(PrintWriter p, int indent) {
-        addIndentation(p, indent);
-        p.print("cout << ");
-        myExp.unparse(p, 0);
-        p.println(";");
-    }
-
-    /* CODEGEN */
-    public void codeGen() {
-        this.genSrcComment();
-
-        // Compute expression result and pop into A0
-        myExp.codeGen();
-
-        // Check if the expression is a string. The only way it can be is if it is a literal, so we check if it's StringLitNode
-        if (myExp instanceof StringLitNode) {
-            Codegen.genPop(Codegen.A2);
-            //int length = ((StringLitNode)myExp).strVal().length() <= 2 ? 0 : ((StringLitNode)myExp).strVal().length() -1;
-            System.out.println(((StringLitNode)myExp).strVal());
-            Codegen.generate(String.format("PrintString(%s, %d, %d, FontBlack)",N64ScreenData.FontAddr,N64ScreenData.ScreenX,N64ScreenData.ScreenY));
-        } else {
-            Codegen.genPop(Codegen.T0);
-            Codegen.generate(String.format("PrintInt(%s, CURR_SCREEN_X, CURR_SCREEN_Y, FontBlack, t0)",N64ScreenData.FontAddr));
-        }
-        N64ScreenData.ScreenY += 16;
-    }
-
-    // 1 kid
     private ExpNode myExp;
 }
 

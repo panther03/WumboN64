@@ -144,16 +144,6 @@ return new Symbol(sym.EOF);
             return S;
           }
 
-"cin"     { Symbol S = new Symbol(sym.CIN, new TokenVal(yyline+1, CharNum.num));
-            CharNum.num += yytext().length();
-            return S;
-          }
-
-"cout"    { Symbol S = new Symbol(sym.COUT, new TokenVal(yyline+1, CharNum.num));
-            CharNum.num += yytext().length();
-            return S;
-          }
-
 "if"      { Symbol S = new Symbol(sym.IF, new TokenVal(yyline+1, CharNum.num));
             CharNum.num += yytext().length();
             return S;
@@ -183,6 +173,11 @@ return new Symbol(sym.EOF);
             CharNum.num += yytext().length();
             return S;
           }
+        
+"Scan" { Symbol S = new Symbol(sym.SCAN, new TokenVal(yyline+1, CharNum.num));
+            CharNum.num += yytext().length();
+            return S;
+       }
         
 "White"|"Black"|"Blue"|"Green"|"Cyan"|"Red"|"Magenta"|"Orange"|"LightGray"|"Gray"|"Purple"|"Indigo"|"Yellow"|"Brown"|"Lime"|"Slate"|"Pink" {
             Symbol S = new Symbol(sym.FONTCOLOR,
@@ -280,16 +275,6 @@ return new Symbol(sym.EOF);
 
 "."       { Symbol S = new Symbol(sym.DOT, new TokenVal(yyline+1, CharNum.num));
             CharNum.num++;
-            return S;
-          }
-
-"<<"      { Symbol S = new Symbol(sym.WRITE, new TokenVal(yyline+1, CharNum.num));
-            CharNum.num += 2;
-            return S;
-          }
-
-">>"      { Symbol S = new Symbol(sym.READ, new TokenVal(yyline+1, CharNum.num));
-            CharNum.num += 2;
             return S;
           }
 
