@@ -55,9 +55,22 @@ EmptySymTableException.class: EmptySymTableException.java
 # cmpl
 #
 cmpl:
+ifeq ($(WUMBO_USE_JAR),YES)
+	java -jar WumboN64.jar test.wumbo temp.asm
+	cat INC/ROM_SKEL.asm temp.asm | cat - INC/ROM_SKEL_POST.asm > out.asm
+	rm temp.asm
+else
 	java -cp $(CP) P6 test.wumbo temp.asm
 	cat INC/ROM_SKEL.asm temp.asm | cat - INC/ROM_SKEL_POST.asm > out.asm
 	rm temp.asm
+endif
+
+###
+# jar
+#
+jar: P6.class
+	jar cvfm WumboN64.jar manifest.txt *.class
+	$(MAKE) -C deps -f Makefile jar
 
 ### 
 # rom
