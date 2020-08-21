@@ -42,7 +42,7 @@ import java.util.*;
 //       AssignStmtNode      AssignNode
 //       PostIncStmtNode     ExpNode
 //       PostDecStmtNode     ExpNode
-//       ReadStmtNode        ExpNode
+//       ScanStmtNode        ExpNode
 //       PrintStmtNode       ExpNode
 //       IfStmtNode          ExpNode, DeclListNode, StmtListNode
 //       IfElseStmtNode      ExpNode, DeclListNode, StmtListNode,
@@ -1402,6 +1402,30 @@ class PrintStmtNode extends StmtNode {
     private int myBgColor;
     private int myFgColor;
     private boolean hasNewline;
+}
+
+class ClearStmtNode extends StmtNode {
+    public ClearStmtNode(){
+    }
+    public int getSize() {
+        return 0;
+    }
+
+    public void unparse(PrintWriter p,int indent) {
+        addIndentation(p,indent);
+        p.println("Clear();");
+    }
+
+    public void nameAnalysis(SymTable symTab) {
+    }
+
+    public void typeCheck(Type retType){
+    }
+
+    public void codeGen() {
+        Codegen.generate("ResetScrn()");
+    }
+
 }
 
 class IfStmtNode extends StmtNode {

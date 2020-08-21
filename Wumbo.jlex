@@ -178,6 +178,11 @@ return new Symbol(sym.EOF);
             CharNum.num += yytext().length();
             return S;
        }
+      
+"Clear" { Symbol S = new Symbol(sym.CLEAR, new TokenVal(yyline+1, CharNum.num));
+            CharNum.num += yytext().length();
+            return S;
+       }
         
 "White"|"Black"|"Blue"|"Green"|"Cyan"|"Red"|"Magenta"|"Orange"|"LightGray"|"Gray"|"Purple"|"Indigo"|"Yellow"|"Brown"|"Lime"|"Slate"|"Pink" {
             Symbol S = new Symbol(sym.FONTCOLOR,

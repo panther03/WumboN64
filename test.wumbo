@@ -1,10 +1,3 @@
-int y;
-bool a;
-
-int f (int g) {
-    return g + 2 * 3;
-}
-
 int fac(int n) {
     if (n == 0) {
         return 1;
@@ -14,18 +7,18 @@ int fac(int n) {
 }
 
 
-int main (int x) {
+int main () {
+    int k;
     int n;
-    n = 1;   
-    //while (n < 40) {
-    //    if (n > 20) {
-    //        PrintLn(5, Green, Purple);
-    //    } else {
-    //        PrintLn(1, Indigo, Red);
-    //    }
-    //    
-    //    n++;
-    //}
-    Scan(n); 
-    PrintLn(n);
+    Scan(n);
+    while (true) {
+        k = 1;
+        PrintLn(n,Black,Red);
+        while (k <= n) {
+            PrintLn(fac(k), Indigo, Pink);
+            k++;
+        }
+        Scan(n);
+        Clear();
+    }
 }

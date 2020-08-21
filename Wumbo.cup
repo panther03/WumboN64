@@ -49,6 +49,7 @@ terminal                COMMA;
 terminal                DOT;
 terminal                PRINTLN;
 terminal                SCAN;
+terminal                CLEAR;
 terminal                PLUSPLUS;
 terminal                MINUSMINUS;
 terminal                PLUS;
@@ -227,6 +228,9 @@ stmt            ::= assignExp:ae SEMICOLON
                 :}
                 | PRINTLN LPAREN exp:e RPAREN SEMICOLON
                 {: RESULT = new PrintStmtNode(e, true);
+                :}
+                | CLEAR LPAREN RPAREN SEMICOLON
+                {: RESULT = new ClearStmtNode();
                 :}
                 | IF LPAREN exp:e RPAREN LCURLY varDeclList:vdl stmtList:sl RCURLY
                 {: RESULT = new IfStmtNode(e,

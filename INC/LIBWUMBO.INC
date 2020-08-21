@@ -18,6 +18,12 @@ macro ClearScrn() {
   addi a0,4 // VRAM += 4
 }
 
+macro ResetScrn() {
+  ClearScrn()
+  la t0,CURR_SCREEN_Y
+  sw r0,0(t0)
+}
+
 macro WaitForContinue(ypos_addr) {
   PrintStringOG($A0100000, 0, 224, FontBlack, ContinueMsg, 28) // Print Text String To VRAM Using Font At X,Y Position
   li a0, $BFC007C4
@@ -43,10 +49,6 @@ macro WaitForContinue(ypos_addr) {
 }
 
 macro ReadInput() {
-  nop
-  nop
-  nop
-  nop
   li v0,0
   li t3,0
   li t4,0
