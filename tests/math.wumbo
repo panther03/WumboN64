@@ -1,0 +1,57 @@
+
+int y;
+bool a;
+
+int f (int g) {
+    return g + 2 * 3;
+}
+
+int fac(int n) {
+    if (n == 0) {
+        return 1;
+    } else {
+        return n * fac(n - 1);
+    }
+}
+
+
+int main (int x) {
+    int z;
+    int test;
+    a = true;
+    x = 4;
+    z = 5;
+
+    x++;
+
+    PrintLn(x);
+
+    PrintLn(z);
+
+    PrintLn(x == z);
+
+
+    
+    if ((x == z) || (x == 4)) {
+        PrintLn("test");        
+    }
+    
+
+    PrintLn(x / 4);
+    
+    PrintLn(x + 6);
+    
+    PrintLn(x - 2);
+    
+    PrintLn(x * 4);
+
+    PrintLn("Hello World!");
+
+    PrintLn(f(3));
+
+    Scan(test);
+
+    PrintLn(fac(5));
+
+    return x + 2;
+}

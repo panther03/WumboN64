@@ -34,7 +34,7 @@ Credit to PeterLemon/N64 for his HelloWorld and N64Input examples, which served 
 * Use `make` to build the compiler.
 * `make cmpl` creates an out.asm file that can be assembled and then CRC-checked with `chksum64`. (basically what `test` was before)
 * `make rom` runs the `cmpl` step then assembles and `chksum64`'s it into a ROM usable by an emulator. By default it uses the `bass` and `chksum64` binaries included in the repo, but you can set the `WUMBO_TOOLS` environment variable to `SYSTEM` to use the binaries in your own path, in case you have them.
-* `make play` runs the MAME emulator's N64 core and plays the ROM file. (There wasn't an easy way to bundle MAME with the rest of the tools so this has to be installed manually; or alternatively some other emulator like Project64 or Mupen64Plus should work fine.) You can also set the environment variable `WUMBO_DEBUG` to `YES` to launch the debugging interface with MAME.
+* `make play` runs an N64 emulator of your choice and plays the rom file. By default it tries to launch mupen64plus, but using the `WUMBO_EMU` environment variable this can be changed to the MAME emulator (`WUMBO_EMU=MAME`) or MAME with the debugging interface active (`WUMBO_EMU=MAME_DEBUG`). Additionally, a script has been included to automatically download a mupen64plus binary and installing it with your permission; run the script with `make installemu`.
 
 # N64-specific notes/limitations
 
@@ -42,3 +42,7 @@ Credit to PeterLemon/N64 for his HelloWorld and N64Input examples, which served 
 * Code that makes use of button presses is not quite sensitive enough, sometimes button presses aren't fully registered. I'm not sure why this is, I'd have to look into it more.
 * Main function exit might not work right. I can't imagine this would be an issue because right now Wumbo programs are built as one rom, with nothing running "after" them but if there was an operating system it was returning to it would probably not work because an important SPIM syscall was ripped out. At the moment when a program finishes it simply enters an endless loop which is the intended functionality.
 * I haven't tested it on a real console because I don't have the equipment but the creator of the original HelloWorld demo has tested it on real hardware and it did work so I have reason to believe it should work.
+
+# Code Examples
+
+Code examples can be found in the `tests/` directory. At the moment, there are 4 examples (including the test.wumbo found at the root of this repository.)

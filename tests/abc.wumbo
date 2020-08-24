@@ -3,8 +3,7 @@ bool q;
 int c;
 
 void print_c() {
-    cout << c + 1;
-    cout << "\n";
+    PrintLn(c + 1);
 }
 
 int main() {
@@ -19,16 +18,14 @@ int main() {
         a = c = 3 + a;
         b--;
     }
-    cout << b;
-    cout << "\n";
+    PrintLn(b);
   }
   print_c();
-  cout << a;
-  cout << "\n";
+  PrintLn(a);
 
   p = q = true;
 
-  cout << ((p || q) && !(a != c));
+  PrintLn(((p || q) && !(a != c)));
 
   return c;
 }

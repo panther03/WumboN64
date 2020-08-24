@@ -72,6 +72,11 @@ jar: P6.class
 	jar cvfm WumboN64.jar manifest.txt *.class
 	$(MAKE) -C deps -f Makefile jar
 
+###
+# installemu
+#
+installemu:
+	cd tools && ./install_mupen64.sh
 ### 
 # rom
 # 
@@ -80,7 +85,7 @@ rom: cmpl
 ifeq ($(WUMBO_TOOLS),SYSTEM)
 	bass out.asm
 	chksum64 out.N64
-else
+else 
 	tools/bass out.asm
 	tools/chksum64 out.N64
 endif
@@ -90,10 +95,12 @@ endif
 #
 play:
 
-ifeq ($(WUMBO_DEBUG),YES)
+ifeq ($(WUMBO_EMU),MAME_DEBUG)
 	mame n64 -window -cart out.N64 -switchres -nofilter -debug
-else
+else ifeq ($(WUMBO_EMU),MAME)
 	mame n64 -window -cart out.N64 -switchres -nofilter
+else 
+	mupen64plus out.N64
 endif
 
 ###
